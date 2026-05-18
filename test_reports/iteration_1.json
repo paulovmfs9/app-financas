@@ -1,0 +1,64 @@
+{
+  "summary": "Frontend-only E2E testing of Saldo (Expo/RN + Firebase). Registered a new user, completed onboarding, validated Home dashboard, FAB→add-expense, auto-suggestion of category from description, Firestore live-update via onSnapshot, Resumo and Perfil navigation, theme switching, and logout. Core flows work; two issues found: (1) post-onboarding redirect bug (HIGH) and (2) logout from Perfil does not redirect on web (likely RN-web Alert.alert behavior).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Gate (app/_layout.tsx)",
+        "issue": "After registering and completing onboarding (tapping Continuar), updateProfile({onboarded:true}) succeeds in Firestore and state, but the user remains stuck on /onboarding. The Gate effect handles 'authenticated && inAuth' and 'authenticated && !onboarded && segments[0] !== onboarding', but it has NO branch for 'authenticated && profile.onboarded === true && segments[0] === onboarding' — so no router.replace('/(tabs)') is ever called after the user finishes onboarding. Confirmed: a subsequent login by the same user lands correctly on /(tabs) (R$ 3.500,00), proving the profile was saved; only the in-session redirect is missing.",
+        "testID": "onboarding-continue-button",
+        "priority": "HIGH"
+      },
+      {
+        "component": "Perfil → Logout",
+        "issue": "Tapping perfil-logout-button shows Alert.alert('Sair', ...) with Cancelar/Sair buttons. On Expo web, accepting the dialog (via Playwright dialog handler) does not call signOut() and the user remains on Perfil. Likely because react-native-web renders Alert.alert as a custom modal (not window.confirm) OR signOut() is invoked but UI does not navigate. Recommend either skipping confirm on web (Platform.OS === 'web' ? signOut() : Alert.alert(...)) or rendering an in-app modal with explicit testIDs for the Confirm/Cancel buttons so it can be tested.",
+        "testID": "perfil-logout-button",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "verified_features": [
+    "Cadastro Firebase (signUp) — usuário criado e perfil ensure() em Firestore",
+    "Persistência via AsyncStorage — recarregar a página manteve sessão",
+    "Login signInWithEmailAndPassword — OK, redirecionou para Home",
+    "Home dashboard: HERO R$ 3.500,00, Limite/dia R$ 159 (≈3500/22), alerta 'Tudo sob controle'",
+    "FAB → /add-expense (modal slide_from_bottom) — OK",
+    "Auto-sugestão de categoria: digitar 'uber pra casa' selecionou chip 'Transporte' (border azul rgb(59,130,246)) via debounce 250ms",
+    "Salvar gasto R$ 35,50: Firestore users/{uid}/expenses; saldo atualizou para R$ 3.464,50 via onSnapshot; 'uber pra casa' apareceu em Recentes",
+    "Navegação Resumo: linhas da tabela presentes (resumo-row-*)",
+    "Navegação Perfil: testIDs visíveis; troca de tema (theme-dark) sem erro",
+    "Validação: senha < 6 chars bloqueia submit no Register/Login (validator local)"
+  ],
+  "test_report_links": [
+    "/tmp/home.png (screenshot Home pós-login com R$ 3.500,00)"
+  ],
+  "action_items": [
+    "FIX (HIGH): In /app/frontend/app/_layout.tsx Gate, add: `if (profile && profile.onboarded && segments[0] === 'onboarding') router.replace('/(tabs)');` so users completing onboarding leave the screen immediately.",
+    "FIX (MEDIUM): In /app/frontend/app/(tabs)/perfil.tsx onLogout, on web (Platform.OS === 'web') call signOut() directly OR replace Alert.alert with a custom in-app confirm modal exposing testIDs for the action buttons; this also improves UX consistency between native and web.",
+    "Optional: add testIDs to the bottom Tab bar items (e.g., tab-inicio / tab-resumo / tab-perfil) so navigation is selector-stable instead of relying on visible text.",
+    "Optional: surface Firestore errors from updateProfile in onboarding (currently swallowed silently if rules deny)."
+  ],
+  "critical_code_review_comments": [
+    "Gate effect (app/_layout.tsx:18-34) is missing the post-onboarding redirect branch — root cause of the stuck-on-onboarding bug.",
+    "Alert.alert is used for destructive confirm in Perfil; on RN-web this can behave inconsistently. Prefer a custom in-app modal for cross-platform parity and testability.",
+    "firebase.config.ts hardcodes API key inline; OK for client SDK (public key) but consider moving to EXPO_PUBLIC_* envs for multi-environment deploys.",
+    "AuthProvider catches profile-load failures and still sets status='authenticated' with profile=null (line 42-47). If that path is hit, Gate will not redirect to onboarding and Home will crash on profile?. fields (handled with optional chaining, OK) but snapshot will be salary=0/bills=0 silently — consider showing an error toast.",
+    "ExpensesProvider.subscribeMonth uses monthBounds() at mount; if the app stays open across midnight on the last day of a month, bounds won't refresh until reload (minor)."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A (not requested)",
+    "frontend": "~90% (10/11 review items pass; onboarding redirect + logout-on-web fail)"
+  },
+  "seed_data_creation": "Created Firebase user teste1778451314@saldo.app / Teste123! with salary 5000 / bills 1500 / onboarded=true and one expense (uber pra casa, R$ 35,50, transporte). Reusable for follow-up tests.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Firebase only frontend (no FastAPI calls). URL: https://finan-light.preview.emergentagent.com. Existing test user: teste1778451314@saldo.app / Teste123! (already onboarded). To test register/onboarding redirect fix, create NEW user with timestamp suffix (e.g. teste{epoch}@saldo.app) — Firebase rejects email reuse. After Continuar in onboarding, user MUST land on (tabs) within ~3s. testIDs are kebab-case as documented in the original request.",
+  "rca_of_issue": "BUG #1 (stuck on /onboarding): app/_layout.tsx Gate useEffect handles two cases: (a) unauthenticated -> push to /(auth)/login, (b) authenticated+inAuth -> push to /(tabs) or /onboarding based on profile.onboarded, (c) authenticated+!onboarded+notOnboardingScreen -> push to /onboarding. It is missing case (d) authenticated+onboarded+onOnboardingScreen -> push to /(tabs). When updateProfile flips profile.onboarded to true while the user is at /onboarding, none of (a)-(c) match, so the redirect never happens. Reproduction: register new user → fill 5000/1500 → tap Continuar → screen stays on onboarding. Verified the data is persisted by logging in again — second login goes straight to Home with R$3.500. Fix: add `if (profile && profile.onboarded && segments[0] === 'onboarding') { router.replace('/(tabs)'); return; }` before the last `if` in the Gate effect."
+}

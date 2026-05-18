@@ -1,0 +1,104 @@
+{
+  "theme": "light_and_dark",
+  "archetype": "1_organic_earthy",
+  "brand": {
+    "name": "Saldo",
+    "vibe": "Calm, clear, premium minimalism. Notion meets Nubank."
+  },
+  "colors": {
+    "primary": {
+      "light": "#059669",
+      "dark": "#10b981",
+      "description": "Emerald/Sage green. Used for CTAs, positive numbers, and brand identity."
+    },
+    "background": {
+      "light": "#F8FAF9",
+      "dark": "#0A0F0D",
+      "description": "Off-white for light mode, deep charcoal for dark mode."
+    },
+    "surface": {
+      "light": "#FFFFFF",
+      "dark": "#131C18",
+      "description": "Card backgrounds."
+    },
+    "text": {
+      "primary_light": "#1A202C",
+      "primary_dark": "#F3F4F6",
+      "secondary_light": "#718096",
+      "secondary_dark": "#9CA3AF"
+    },
+    "status": {
+      "success": "#58CC02",
+      "warning": "#DD6B20",
+      "danger": "#E53E3E"
+    },
+    "border": {
+      "light": "#E2E8F0",
+      "dark": "#2D3748"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Outfit",
+      "body": "Manrope",
+      "fallback": "System (sans-serif)"
+    },
+    "sizes": {
+      "hero_balance": "text-5xl sm:text-6xl font-black tracking-tighter",
+      "h1": "text-3xl font-bold tracking-tight",
+      "h2": "text-2xl font-semibold tracking-tight",
+      "h3": "text-xl font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em]"
+    },
+    "rules": "Avoid Inter or Roboto for headings. Use negative tracking (tracking-tight) for large headings to give a premium feel. Left-align most text for readability."
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing. Extreme simplicity. If it's not essential, remove it. Emphasize negative space.",
+    "container": "p-6 sm:p-8",
+    "gap": "gap-4 sm:gap-6",
+    "card_style": "rounded-2xl border border-[#E2E8F0] dark:border-[#2D3748] bg-white dark:bg-[#131C18] p-5 shadow-sm",
+    "hero_section": "py-8 flex flex-col items-center justify-center gap-2",
+    "bento_grid": "flex flex-wrap flex-row gap-4"
+  },
+  "components": {
+    "buttons": {
+      "base": "rounded-xl font-semibold py-4 px-6 active:scale-95 transition-transform flex items-center justify-center",
+      "primary": "bg-[#059669] text-white",
+      "secondary": "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+    },
+    "fab": "absolute bottom-6 right-6 h-16 w-16 rounded-full bg-[#059669] flex items-center justify-center shadow-lg active:scale-90",
+    "input": "rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#0A0F0D] px-4 py-4 text-base focus:border-[#059669] focus:ring-1 focus:ring-[#059669]",
+    "smart_alert_banner": "rounded-xl p-4 bg-gray-100 dark:bg-gray-800 flex flex-row items-center gap-3",
+    "chips": "rounded-full px-4 py-2 bg-gray-100 dark:bg-gray-800 text-sm font-medium border border-transparent active:border-[#059669]"
+  },
+  "motion": {
+    "interaction": "Snappy micro-interactions. Modals and bottom sheets should slide up with subtle spring physics.",
+    "list_transitions": "Fade and slide in for new expenses."
+  },
+  "media": {
+    "image_urls": {
+      "user_avatar": {
+        "url": "https://images.unsplash.com/photo-1758613654360-45f1ff78c0cf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMG1pbmltYWxpc3R8ZW58MHx8fHwxNzc4MjAxODQzfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Default minimalist user avatar for the profile settings",
+        "category": "profile"
+      }
+    }
+  },
+  "testing": {
+    "rules": "All interactive elements MUST include a `testID` (for React Native) attribute with kebab-case role-based naming (e.g., `login-submit-button`, `fab-add-expense`)."
+  },
+  "instructions_to_main_agent": [
+    "Project is a React Native Expo app with file-based routing (Expo Router).",
+    "Use NativeWind for Tailwind styling. Convert the tailwind classes provided above into className props.",
+    "Core philosophy: The user must understand their financial status in <10s. Keep the UI devoid of complex spreadsheet-like tables on the Home screen.",
+    "Home screen must have a massive HERO text showing the remaining month balance.",
+    "Use 'cards modernos' with 1px borders and very light shadow for data points (Daily average, Projection, Daily limit).",
+    "Implement the FAB (Floating Action Button) for quick expense adding. It should trigger a modal/sheet with amount, category chips, and description.",
+    "The Smart Alerts banner should be prominent on the Home screen with a friendly tone ('Você está dentro do planejado').",
+    "Load 'Outfit' and 'Manrope' fonts via expo-font. If not possible, use system fonts (sans-serif) as fallback.",
+    "Ensure both Light and Dark themes are supported via NativeWind's dark mode classes (`dark:bg-...`).",
+    "Do NOT use bright generic blue; strictly follow the sage/emerald green palette for brand moments."
+  ]
+}
