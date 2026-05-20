@@ -115,6 +115,12 @@ export default function RegisterScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Criar conta</Text>}
           </TouchableOpacity>
 
+          <Link href="/(auth)/forgot-password" asChild>
+            <TouchableOpacity testID="register-forgot-password" style={styles.forgotBtn}>
+              <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Esqueci minha senha</Text>
+            </TouchableOpacity>
+          </Link>
+
           <View style={styles.footer}>
             <Text style={{ color: colors.textSecondary, fontSize: fontSizes.body }}>Já tem uma conta? </Text>
             <Link href="/(auth)/login" asChild>
@@ -142,5 +148,6 @@ const styles = StyleSheet.create({
   error: { marginTop: spacing.base, fontSize: fontSizes.small },
   primaryBtn: { marginTop: spacing.xl, paddingVertical: 18, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
+  forgotBtn: { alignItems: "center", paddingVertical: spacing.base },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: spacing.xl },
 });

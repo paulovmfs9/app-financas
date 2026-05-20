@@ -8,6 +8,9 @@ import {
   signOut as fbSignOut,
   onAuthStateChanged,
   updateProfile,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth } from "../config/firebase.config";
@@ -33,6 +36,18 @@ export const AuthService = {
   async login(email: string, password: string): Promise<FirebaseUser> {
     const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
     return cred.user;
+  },
+
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email.trim());
+  },
+
+  async verifyPasswordResetCode(code: string): Promise<string> {
+    return verifyPasswordResetCode(auth, code.trim());
+  },
+
+  async confirmPasswordReset(code: string, newPassword: string): Promise<void> {
+    await confirmPasswordReset(auth, code.trim(), newPassword);
   },
 
 
@@ -67,6 +82,10 @@ export function friendlyAuthError(err: any): string {
       return "Muitas tentativas. Tente novamente em alguns minutos.";
     case "auth/network-request-failed":
       return "Sem conexão. Verifique sua internet.";
+    case "auth/expired-action-code":
+      return "Código expirado. Solicite um novo email.";
+    case "auth/invalid-action-code":
+      return "Código inválido. Confira o email recebido ou solicite outro.";
     default:
       return err?.message || "Algo deu errado. Tente novamente.";
   }
