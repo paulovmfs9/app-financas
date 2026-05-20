@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +18,8 @@ const MONTHS_PT = [
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
-  const { snapshot, expenses, loading } = useExpenses();
+  const { snapshot, expenses, loading, deleteExpense } = useExpenses();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   const now = new Date();
@@ -42,6 +43,26 @@ export default function HomeScreen() {
       : colors.info;
 
   const recent = expenses.slice(0, 5);
+
+  const handleDeleteExpense = (id: string) => {
+    Alert.alert("Remover gasto", "Tem certeza que deseja remover este gasto?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Remover",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setDeletingId(id);
+            await deleteExpense(id);
+          } catch {
+            Alert.alert("Erro", "Não foi possível remover o gasto. Tente novamente.");
+          } finally {
+            setDeletingId(null);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -113,6 +134,21 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.expenseAmount, { color: colors.textPrimary }]}>-{formatBRL(e.amount)}</Text>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover gasto ${e.description || cat?.name || "Gasto"}`}
+                    activeOpacity={0.75}
+                    disabled={deletingId === e.id}
+                    onPress={() => handleDeleteExpense(e.id)}
+                    style={[styles.deleteButton, { backgroundColor: colors.danger + "14" }]}
+                    testID={`delete-expense-${e.id}`}
+                  >
+                    {deletingId === e.id ? (
+                      <ActivityIndicator size="small" color={colors.danger} />
+                    ) : (
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    )}
+                  </TouchableOpacity>
                 </View>
               );
             })
@@ -183,6 +219,7 @@ const styles = StyleSheet.create({
   expenseTitle: { fontSize: fontSizes.body, fontWeight: "600" },
   expenseSub: { fontSize: fontSizes.micro, marginTop: 2 },
   expenseAmount: { fontSize: fontSizes.body, fontWeight: "700" },
+  deleteButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   fab: {
     position: "absolute", bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30,
     alignItems: "center", justifyContent: "center",
