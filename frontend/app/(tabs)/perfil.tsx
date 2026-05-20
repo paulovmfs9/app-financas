@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,15 +22,31 @@ export default function PerfilScreen() {
   const { colors, pref, setPref } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
 
+  const [name, setName] = useState(profile?.name ?? "");
   const [salary, setSalary] = useState(String(profile?.monthly_salary ?? 0));
   const [bills, setBills] = useState(String(profile?.fixed_bills_total ?? 0));
   const [saving, setSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
 
+  useEffect(() => {
+    setName(profile?.name ?? "");
+    setSalary(String(profile?.monthly_salary ?? 0));
+    setBills(String(profile?.fixed_bills_total ?? 0));
+  }, [profile?.fixed_bills_total, profile?.monthly_salary, profile?.name]);
+
   const onSave = async () => {
+    if (!name.trim()) {
+      Alert.alert("Nome obrigatório", "Informe seu nome para atualizar o perfil.");
+      return;
+    }
+
     setSaving(true);
     try {
-      await updateProfile({ monthly_salary: parseBRL(salary), fixed_bills_total: parseBRL(bills) });
+      await updateProfile({
+        name: name.trim(),
+        monthly_salary: parseBRL(salary),
+        fixed_bills_total: parseBRL(bills),
+      });
       Alert.alert("Pronto", "Suas informações foram atualizadas.");
     } catch (e: any) {
       Alert.alert("Erro", e?.message || "Não foi possível salvar.");
@@ -50,8 +66,20 @@ export default function PerfilScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Text style={[styles.overline, { color: colors.textMuted }]}>PERFIL</Text>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>{profile?.name || "Você"}</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{profile?.name?.trim() || "Seu perfil"}</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{profile?.email}</Text>
+
+          <Text style={[styles.section, { color: colors.textPrimary }]}>Dados pessoais</Text>
+
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
+          <TextInput
+            testID="perfil-name-input"
+            style={[styles.textInput, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+            value={name}
+            onChangeText={setName}
+            placeholder="Informe seu nome"
+            placeholderTextColor={colors.textMuted}
+          />
 
           <Text style={[styles.section, { color: colors.textPrimary }]}>Finanças</Text>
 
@@ -167,6 +195,7 @@ const styles = StyleSheet.create({
   section: { fontSize: fontSizes.h3, fontWeight: "700", marginTop: spacing.xxl, marginBottom: spacing.base },
   label: { fontSize: fontSizes.small, fontWeight: "600", marginBottom: 8 },
   inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base },
+  textInput: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 16, fontSize: fontSizes.body },
   prefix: { fontSize: fontSizes.body, marginRight: 6, fontWeight: "600" },
   input: { flex: 1, paddingVertical: 16, fontSize: fontSizes.body },
   primaryBtn: { marginTop: spacing.base, paddingVertical: 16, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },

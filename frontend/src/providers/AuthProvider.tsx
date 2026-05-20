@@ -66,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (patch: Partial<User>) => {
       if (!firebaseUser) return;
       await UserRepository.update(firebaseUser.uid, patch);
+      if (typeof patch.name === "string") {
+        await AuthService.updateDisplayName(firebaseUser, patch.name);
+      }
       setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
     },
     [firebaseUser]

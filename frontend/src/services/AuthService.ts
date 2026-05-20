@@ -35,6 +35,11 @@ export const AuthService = {
     return cred.user;
   },
 
+
+  async updateDisplayName(user: FirebaseUser, name: string): Promise<void> {
+    await updateProfile(user, { displayName: name.trim() });
+  },
+
   async signOut(): Promise<void> {
     await fbSignOut(auth);
   },
