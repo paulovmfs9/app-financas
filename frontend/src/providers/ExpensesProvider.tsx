@@ -63,7 +63,24 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const deleteExpense = useCallback(
     async (id: string) => {
       if (!firebaseUser) throw new Error("Não autenticado");
-      await ExpenseRepository.remove(firebaseUser.uid, id);
+
+      let removedExpense: Expense | undefined;
+      setExpenses((current) => {
+        removedExpense = current.find((expense) => expense.id === id);
+        return current.filter((expense) => expense.id !== id);
+      });
+
+      try {
+        await ExpenseRepository.remove(firebaseUser.uid, id);
+      } catch (err) {
+        if (removedExpense) {
+          setExpenses((current) => {
+            if (current.some((expense) => expense.id === removedExpense?.id)) return current;
+            return [...current, removedExpense].sort((a, b) => b.date - a.date);
+          });
+        }
+        throw err;
+      }
     },
     [firebaseUser]
   );

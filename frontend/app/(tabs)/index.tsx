@@ -20,6 +20,7 @@ export default function HomeScreen() {
   const { profile } = useAuth();
   const { snapshot, expenses, loading, deleteExpense } = useExpenses();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const router = useRouter();
 
   const now = new Date();
@@ -44,24 +45,16 @@ export default function HomeScreen() {
 
   const recent = expenses.slice(0, 5);
 
-  const handleDeleteExpense = (id: string) => {
-    Alert.alert("Remover gasto", "Tem certeza que deseja remover este gasto?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Remover",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            setDeletingId(id);
-            await deleteExpense(id);
-          } catch {
-            Alert.alert("Erro", "Não foi possível remover o gasto. Tente novamente.");
-          } finally {
-            setDeletingId(null);
-          }
-        },
-      },
-    ]);
+  const handleDeleteExpense = async (id: string) => {
+    try {
+      setDeletingId(id);
+      await deleteExpense(id);
+      setConfirmDeleteId(null);
+    } catch {
+      Alert.alert("Erro", "Não foi possível remover o gasto. Tente novamente.");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -133,22 +126,55 @@ export default function HomeScreen() {
                       {cat?.name || e.category} • {new Date(e.date).toLocaleDateString("pt-BR")}
                     </Text>
                   </View>
-                  <Text style={[styles.expenseAmount, { color: colors.textPrimary }]}>-{formatBRL(e.amount)}</Text>
-                  <TouchableOpacity
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remover gasto ${e.description || cat?.name || "Gasto"}`}
-                    activeOpacity={0.75}
-                    disabled={deletingId === e.id}
-                    onPress={() => handleDeleteExpense(e.id)}
-                    style={[styles.deleteButton, { backgroundColor: colors.danger + "14" }]}
-                    testID={`delete-expense-${e.id}`}
-                  >
-                    {deletingId === e.id ? (
-                      <ActivityIndicator size="small" color={colors.danger} />
-                    ) : (
-                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                    )}
-                  </TouchableOpacity>
+                  {confirmDeleteId === e.id ? (
+                    <View style={styles.deleteConfirm}>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancelar exclusão"
+                        activeOpacity={0.75}
+                        disabled={deletingId === e.id}
+                        onPress={() => setConfirmDeleteId(null)}
+                        style={[styles.confirmButton, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                        testID={`cancel-delete-expense-${e.id}`}
+                      >
+                        <Text style={[styles.confirmButtonText, { color: colors.textPrimary }]}>Cancelar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Confirmar exclusão de ${e.description || cat?.name || "gasto"}`}
+                        activeOpacity={0.75}
+                        disabled={deletingId === e.id}
+                        onPress={() => handleDeleteExpense(e.id)}
+                        style={[styles.confirmButton, { backgroundColor: colors.danger, borderColor: colors.danger }]}
+                        testID={`confirm-delete-expense-${e.id}`}
+                      >
+                        {deletingId === e.id ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={[styles.confirmButtonText, { color: "#fff" }]}>Excluir</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={[styles.expenseAmount, { color: colors.textPrimary }]}>-{formatBRL(e.amount)}</Text>
+                      <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remover gasto ${e.description || cat?.name || "Gasto"}`}
+                        activeOpacity={0.75}
+                        disabled={deletingId === e.id}
+                        onPress={() => setConfirmDeleteId(e.id)}
+                        style={[styles.deleteButton, { backgroundColor: colors.danger + "14" }]}
+                        testID={`delete-expense-${e.id}`}
+                      >
+                        {deletingId === e.id ? (
+                          <ActivityIndicator size="small" color={colors.danger} />
+                        ) : (
+                          <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               );
             })
@@ -220,6 +246,17 @@ const styles = StyleSheet.create({
   expenseSub: { fontSize: fontSizes.micro, marginTop: 2 },
   expenseAmount: { fontSize: fontSizes.body, fontWeight: "700" },
   deleteButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  deleteConfirm: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  confirmButton: {
+    minWidth: 74,
+    height: 38,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButtonText: { fontSize: fontSizes.micro, fontWeight: "700" },
   fab: {
     position: "absolute", bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30,
     alignItems: "center", justifyContent: "center",
