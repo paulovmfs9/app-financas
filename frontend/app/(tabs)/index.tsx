@@ -64,7 +64,7 @@ export default function HomeScreen() {
           <View>
             <Text style={[styles.overline, { color: colors.textMuted }]}>{monthLabel.toUpperCase()}</Text>
             <Text style={[styles.greeting, { color: colors.textPrimary }]}>
-              Olá, {profile?.name?.trim() || "usuário"}
+              Olá{profile?.name?.trim() ? `, ${profile.name.trim()}` : ""}
             </Text>
           </View>
           <View style={[styles.dot, { backgroundColor: colors.primary }]} />
