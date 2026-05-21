@@ -42,8 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn("[AuthProvider] failed to load profile:", err);
+        await AuthService.signOut();
+        setFbUser(null);
         setProfile(null);
-        setStatus("authenticated");
+        setStatus("unauthenticated");
       }
     });
     return () => unsub();

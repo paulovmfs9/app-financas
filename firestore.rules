@@ -1,12 +1,77 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each user can only read/write their own profile and expenses.
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validUserDoc(uid) {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'email',
+        'name',
+        'monthly_salary',
+        'fixed_bills_total',
+        'theme',
+        'onboarded',
+        'created_at'
+      ])
+      && request.resource.data.keys().hasAll([
+        'uid',
+        'email',
+        'name',
+        'monthly_salary',
+        'fixed_bills_total',
+        'theme',
+        'onboarded',
+        'created_at'
+      ])
+      && request.resource.data.uid == uid
+      && request.resource.data.email is string
+      && request.resource.data.name is string
+      && request.resource.data.monthly_salary is number
+      && request.resource.data.fixed_bills_total is number
+      && request.resource.data.theme in ['light', 'dark', 'system']
+      && request.resource.data.onboarded is bool
+      && request.resource.data.created_at is number;
+    }
+
+    function validExpenseDoc(uid) {
+      return request.resource.data.keys().hasOnly([
+        'user_id',
+        'amount',
+        'category',
+        'description',
+        'date',
+        'created_at'
+      ])
+      && request.resource.data.keys().hasAll([
+        'user_id',
+        'amount',
+        'category',
+        'description',
+        'date',
+        'created_at'
+      ])
+      && request.resource.data.user_id == uid
+      && request.resource.data.amount is number
+      && request.resource.data.amount > 0
+      && request.resource.data.category is string
+      && request.resource.data.description is string
+      && request.resource.data.date is number
+      && request.resource.data.created_at is number;
+    }
+
+    // Each user can only access their own profile and expenses.
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if signedInAs(uid);
+      allow create, update: if signedInAs(uid) && validUserDoc(uid);
+      allow delete: if signedInAs(uid);
 
       match /expenses/{expenseId} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read: if signedInAs(uid);
+        allow create, update: if signedInAs(uid) && validExpenseDoc(uid);
+        allow delete: if signedInAs(uid);
       }
     }
   }

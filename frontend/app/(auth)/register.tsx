@@ -115,7 +115,7 @@ export default function RegisterScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Criar conta</Text>}
           </TouchableOpacity>
 
-          <Link href="/(auth)/forgot-password" asChild>
+          <Link href="./forgot-password" asChild>
             <TouchableOpacity testID="register-forgot-password" style={styles.forgotBtn}>
               <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Esqueci minha senha</Text>
             </TouchableOpacity>

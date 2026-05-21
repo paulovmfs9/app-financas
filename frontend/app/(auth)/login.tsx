@@ -102,7 +102,7 @@ export default function LoginScreen() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Entrar</Text>}
           </TouchableOpacity>
 
-          <Link href="/(auth)/forgot-password" asChild>
+          <Link href="./forgot-password" asChild>
             <TouchableOpacity testID="login-forgot-password" style={styles.forgotBtn}>
               <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Esqueci minha senha</Text>
             </TouchableOpacity>

@@ -7,7 +7,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState, useCall
 import type { Expense, ExpenseInput } from "../models/Expense";
 import { ExpenseRepository } from "../repositories/ExpenseRepository";
 import { useAuth } from "./AuthProvider";
-import { computeSnapshot, monthBounds, FinanceSnapshot } from "../utils/finance";
+import { computeSnapshot, monthBounds, monthKey, FinanceSnapshot } from "../utils/finance";
 
 interface ExpensesCtx {
   loading: boolean;
@@ -23,6 +23,17 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const { firebaseUser, profile } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(() => monthKey());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentMonth((prev) => {
+        const next = monthKey();
+        return prev === next ? prev : next;
+      });
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -43,7 +54,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
       () => setLoading(false)
     );
     return () => unsub();
-  }, [firebaseUser]);
+  }, [firebaseUser, currentMonth]);
 
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
@@ -73,10 +84,11 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
       try {
         await ExpenseRepository.remove(firebaseUser.uid, id);
       } catch (err) {
-        if (removedExpense) {
+        const expenseToRestore = removedExpense;
+        if (expenseToRestore) {
           setExpenses((current) => {
-            if (current.some((expense) => expense.id === removedExpense?.id)) return current;
-            return [...current, removedExpense].sort((a, b) => b.date - a.date);
+            if (current.some((expense) => expense.id === expenseToRestore.id)) return current;
+            return [...current, expenseToRestore].sort((a, b) => b.date - a.date);
           });
         }
         throw err;
