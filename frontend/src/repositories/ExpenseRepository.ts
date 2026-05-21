@@ -12,6 +12,7 @@ import {
   where,
   orderBy,
   onSnapshot,
+  getDocs,
   Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../config/firebase.config";
@@ -33,6 +34,16 @@ export const ExpenseRepository = {
 
   async remove(uid: string, expenseId: string): Promise<void> {
     await deleteDoc(doc(db, "users", uid, "expenses", expenseId));
+  },
+
+  async countMonth(uid: string, startMs: number, endMs: number): Promise<number> {
+    const q = query(
+      colRef(uid),
+      where("date", ">=", startMs),
+      where("date", "<=", endMs)
+    );
+    const snap = await getDocs(q);
+    return snap.size;
   },
 
   /**

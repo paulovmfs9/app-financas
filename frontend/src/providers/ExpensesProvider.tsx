@@ -4,26 +4,45 @@
  * média diária, projeção, alerta, etc).
  */
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import type { Expense, ExpenseInput } from "../models/Expense";
 import { ExpenseRepository } from "../repositories/ExpenseRepository";
 import { useAuth } from "./AuthProvider";
+import { useTheme } from "./ThemeProvider";
 import { computeSnapshot, monthBounds, monthKey, FinanceSnapshot } from "../utils/finance";
+import {
+  canAddExpense,
+  FREE_MONTHLY_EXPENSE_LIMIT,
+  handleExpenseLimitReached,
+  isUserPro,
+  LIMIT_REACHED_MESSAGE,
+  openUpgradeModal as showUpgradeModal,
+} from "../services/MonetizationService";
+import { spacing, radii, fontSizes } from "../utils/theme";
 
 interface ExpensesCtx {
   loading: boolean;
   expenses: Expense[];
   snapshot: FinanceSnapshot;
+  monthlyExpenseCount: number;
+  isPro: boolean;
+  usageLabel: string;
   addExpense: (input: ExpenseInput) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  openUpgradeModal: () => void;
 }
+
+type MonetizationModal = "limit" | "upgrade" | "payment" | null;
 
 const Ctx = createContext<ExpensesCtx | null>(null);
 
 export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const { firebaseUser, profile } = useAuth();
+  const { colors } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(() => monthKey());
+  const [activeModal, setActiveModal] = useState<MonetizationModal>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,19 +75,35 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [firebaseUser, currentMonth]);
 
+  const pro = isUserPro(profile);
+  const monthlyExpenseCount = expenses.length;
+  const usageLabel = pro
+    ? "Plano Pro ativo \u2014 gastos ilimitados"
+    : `Gastos do mês: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT}`;
+
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
     const bills = profile?.fixed_bills_total ?? 0;
     return computeSnapshot(salary, bills, expenses);
   }, [expenses, profile?.monthly_salary, profile?.fixed_bills_total]);
 
+  const openUpgradeModal = useCallback(() => {
+    showUpgradeModal(() => setActiveModal("upgrade"));
+  }, []);
+
   const addExpense = useCallback(
     async (input: ExpenseInput) => {
       if (!firebaseUser) throw new Error("Não autenticado");
+      const permission = await canAddExpense(firebaseUser.uid, profile);
+      if (!permission.allowed) {
+        setActiveModal("limit");
+        handleExpenseLimitReached(openUpgradeModal);
+      }
+
       await ExpenseRepository.create(firebaseUser.uid, input);
       // Live snapshot will update automatically via onSnapshot.
     },
-    [firebaseUser]
+    [firebaseUser, openUpgradeModal, profile]
   );
 
   const deleteExpense = useCallback(
@@ -98,9 +133,103 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <Ctx.Provider value={{ loading, expenses, snapshot, addExpense, deleteExpense }}>
+    <Ctx.Provider
+      value={{
+        loading,
+        expenses,
+        snapshot,
+        monthlyExpenseCount,
+        isPro: pro,
+        usageLabel,
+        addExpense,
+        deleteExpense,
+        openUpgradeModal,
+      }}
+    >
       {children}
+      <MonetizationModalView
+        activeModal={activeModal}
+        close={() => setActiveModal(null)}
+        showUpgrade={() => setActiveModal("upgrade")}
+        showPaymentInfo={() => setActiveModal("payment")}
+        colors={colors}
+      />
     </Ctx.Provider>
+  );
+}
+
+function MonetizationModalView({
+  activeModal,
+  close,
+  showUpgrade,
+  showPaymentInfo,
+  colors,
+}: {
+  activeModal: MonetizationModal;
+  close: () => void;
+  showUpgrade: () => void;
+  showPaymentInfo: () => void;
+  colors: any;
+}) {
+  const visible = activeModal !== null;
+  const isLimit = activeModal === "limit";
+  const isUpgrade = activeModal === "upgrade";
+  const isPayment = activeModal === "payment";
+
+  if (!visible) return null;
+
+  return (
+    <View style={styles.modalBackdrop}>
+      <TouchableOpacity accessibilityRole="button" activeOpacity={1} onPress={close} style={StyleSheet.absoluteFill} />
+      <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+          {isLimit ? (
+            <>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Limite gratuito atingido</Text>
+              <Text style={[styles.modalBody, { color: colors.textSecondary }]}>{LIMIT_REACHED_MESSAGE}</Text>
+              <TouchableOpacity testID="limit-upgrade-button" activeOpacity={0.85} onPress={showUpgrade} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
+                <Text style={styles.primaryButtonText}>Ver Plano Pro</Text>
+              </TouchableOpacity>
+              <TouchableOpacity testID="limit-later-button" activeOpacity={0.75} onPress={close} style={styles.secondaryButton}> 
+                <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Agora não</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+
+          {isUpgrade ? (
+            <>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Plano Pro</Text>
+              <Text style={[styles.price, { color: colors.primary }]}>R$ 9,90/mês</Text>
+              <View style={styles.benefits}>
+                {[
+                  "gastos ilimitados",
+                  "controle financeiro completo",
+                  "média diária de gastos",
+                  "projeção de gastos até o fim do mês",
+                  "acompanhamento mensal sem limite",
+                ].map((item) => (
+                  <Text key={item} style={[styles.benefit, { color: colors.textPrimary }]}>- {item}</Text>
+                ))}
+              </View>
+              <TouchableOpacity testID="upgrade-subscribe-button" activeOpacity={0.85} onPress={showPaymentInfo} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
+                <Text style={styles.primaryButtonText}>Assinar Plano Pro</Text>
+              </TouchableOpacity>
+              <TouchableOpacity testID="upgrade-later-button" activeOpacity={0.75} onPress={close} style={styles.secondaryButton}> 
+                <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Agora não</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+
+          {isPayment ? (
+            <>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Assinatura em breve</Text>
+              <Text style={[styles.modalBody, { color: colors.textSecondary }]}>Em breve você poderá assinar com cartão de crédito, Pix, Apple Pay ou Google Play.</Text>
+              <TouchableOpacity testID="payment-info-ok-button" activeOpacity={0.85} onPress={close} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
+                <Text style={styles.primaryButtonText}>Entendi</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -109,3 +238,33 @@ export function useExpenses(): ExpensesCtx {
   if (!v) throw new Error("useExpenses must be used within ExpensesProvider");
   return v;
 }
+
+const styles = StyleSheet.create({
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    elevation: 1000,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+  },
+  modalTitle: { fontSize: fontSizes.h2, fontWeight: "800", marginBottom: spacing.sm },
+  modalBody: { fontSize: fontSizes.body, lineHeight: 23, marginBottom: spacing.lg },
+  price: { fontSize: 28, fontWeight: "900", marginBottom: spacing.base },
+  benefits: { gap: spacing.sm, marginBottom: spacing.lg },
+  benefit: { fontSize: fontSizes.body, lineHeight: 22 },
+  primaryButton: {
+    borderRadius: radii.lg,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButtonText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "800" },
+  secondaryButton: { paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  secondaryButtonText: { fontSize: fontSizes.body, fontWeight: "700" },
+});

@@ -29,7 +29,7 @@ type ChartSlice = {
 
 export default function ResumoScreen() {
   const { colors } = useTheme();
-  const { snapshot } = useExpenses();
+  const { snapshot, usageLabel, isPro, openUpgradeModal } = useExpenses();
   const now = new Date();
   const monthLabel = `${MONTHS_PT[now.getMonth()]} de ${now.getFullYear()}`;
   const chartSlices = buildChartSlices(snapshot.by_category, snapshot.total_spent);
@@ -53,6 +53,13 @@ export default function ResumoScreen() {
         <Text style={[styles.overline, { color: colors.textMuted }]}>RESUMO</Text>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{monthLabel}</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Visão completa das suas finanças deste mês.</Text>
+
+        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: isPro ? colors.primary : colors.border }]}> 
+          <Text style={[styles.planIndicatorText, { color: isPro ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+          {!isPro ? (
+            <Text testID="resumo-upgrade-button" onPress={openUpgradeModal} style={[styles.planAction, { color: colors.primary }]}>Plano Pro</Text>
+          ) : null}
+        </View>
 
         <View style={[styles.table, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
           {rows.map((r, i) => {
@@ -198,6 +205,9 @@ const styles = StyleSheet.create({
   overline: { fontSize: 11, fontWeight: "700", letterSpacing: 2, marginBottom: 6 },
   title: { fontSize: fontSizes.h1, fontWeight: "800", letterSpacing: -0.8 },
   subtitle: { fontSize: fontSizes.body, marginTop: 6, marginBottom: spacing.xl },
+  planIndicator: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
+  planIndicatorText: { flex: 1, fontSize: fontSizes.small, fontWeight: "700" },
+  planAction: { fontSize: fontSizes.small, fontWeight: "800" },
   table: { borderRadius: radii.lg, borderWidth: 1, paddingHorizontal: spacing.base },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 18 },
   rowLabel: { fontSize: fontSizes.body, fontWeight: "500" },

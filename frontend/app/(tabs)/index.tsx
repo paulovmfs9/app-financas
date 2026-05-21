@@ -18,7 +18,7 @@ const MONTHS_PT = [
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
-  const { snapshot, expenses, loading, deleteExpense } = useExpenses();
+  const { snapshot, expenses, loading, deleteExpense, usageLabel, isPro, openUpgradeModal } = useExpenses();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const router = useRouter();
@@ -84,6 +84,15 @@ export default function HomeScreen() {
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             de {formatBRL(Math.max(0, snapshot.salary - snapshot.fixed_bills))} disponíveis
           </Text>
+        </View>
+
+        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: isPro ? colors.primary : colors.border }]}> 
+          <Text style={[styles.planIndicatorText, { color: isPro ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+          {!isPro ? (
+            <TouchableOpacity testID="home-upgrade-button" activeOpacity={0.75} onPress={openUpgradeModal}>
+              <Text style={[styles.planAction, { color: colors.primary }]}>Plano Pro</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Smart alert */}
@@ -227,6 +236,9 @@ const styles = StyleSheet.create({
   heroLabel: { fontSize: fontSizes.small, marginBottom: 6 },
   hero: { fontSize: 48, fontWeight: "800", letterSpacing: -1.5 },
   heroSub: { fontSize: fontSizes.small, marginTop: 6 },
+  planIndicator: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
+  planIndicatorText: { flex: 1, fontSize: fontSizes.small, fontWeight: "700" },
+  planAction: { fontSize: fontSizes.small, fontWeight: "800" },
   alert: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
   alertDot: { width: 10, height: 10, borderRadius: 5 },
   alertTitle: { fontSize: fontSizes.body, fontWeight: "700" },

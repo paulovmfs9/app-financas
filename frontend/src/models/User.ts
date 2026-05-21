@@ -1,6 +1,9 @@
 /** Domain models (pure TypeScript types). */
 
 export type ThemePref = "light" | "dark" | "system";
+export type UserPlan = "free" | "pro";
+export type SubscriptionStatus = "inactive" | "active" | "canceled";
+export type SubscriptionProvider = "web" | "mercadopago" | "stripe" | "apple" | "google" | "revenuecat" | null;
 
 export interface User {
   uid: string;
@@ -11,15 +14,46 @@ export interface User {
   theme: ThemePref;
   onboarded: boolean;
   created_at: number; // epoch ms
+  plan: UserPlan;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionProvider: SubscriptionProvider;
+  subscriptionPrice: number;
+  subscriptionCurrency: "BRL";
+  subscriptionExpiresAt: number | { toMillis?: () => number } | null;
+  updatedAt: number | { toMillis?: () => number };
 }
 
-export const emptyUser = (uid: string, email: string, name: string): User => ({
-  uid,
-  email,
-  name,
+export const subscriptionDefaults = () => ({
+  plan: "free" as UserPlan,
+  subscriptionStatus: "inactive" as SubscriptionStatus,
+  subscriptionProvider: null as SubscriptionProvider,
+  subscriptionPrice: 9.9,
+  subscriptionCurrency: "BRL" as const,
+  subscriptionExpiresAt: null,
+  updatedAt: Date.now(),
+});
+
+export const normalizeUser = (user: Partial<User> & Pick<User, "uid" | "email" | "name">): User => ({
   monthly_salary: 0,
   fixed_bills_total: 0,
   theme: "system",
   onboarded: false,
   created_at: Date.now(),
+  ...subscriptionDefaults(),
+  ...user,
+  plan: user.plan ?? "free",
+  subscriptionStatus: user.subscriptionStatus ?? "inactive",
+  subscriptionProvider: user.subscriptionProvider ?? null,
+  subscriptionPrice: user.subscriptionPrice ?? 9.9,
+  subscriptionCurrency: user.subscriptionCurrency ?? "BRL",
+  subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+  updatedAt: user.updatedAt ?? Date.now(),
 });
+
+export const emptyUser = (uid: string, email: string, name: string): User =>
+  normalizeUser({
+    uid,
+    email,
+    name,
+    created_at: Date.now(),
+  });
