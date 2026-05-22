@@ -1,12 +1,20 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useExpenses } from "../../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL } from "../../src/utils/format";
 import { CATEGORIES, categoryById } from "../../src/models/Category";
+import { ExportModal } from "../../src/components/ExportModal";
+import {
+  exportFinancialReport,
+  showExportResult,
+  type ExportFormat,
+  type ExportReportData,
+} from "../../src/services/exportService";
 
 const MONTHS_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -30,9 +38,39 @@ type ChartSlice = {
 export default function ResumoScreen() {
   const { colors } = useTheme();
   const { snapshot, usageLabel, isPro, openUpgradeModal } = useExpenses();
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null);
   const now = new Date();
   const monthLabel = `${MONTHS_PT[now.getMonth()]} de ${now.getFullYear()}`;
   const chartSlices = buildChartSlices(snapshot.by_category, snapshot.total_spent);
+
+  const exportData = useMemo<ExportReportData>(() => ({
+    monthLabel,
+    generatedAt: new Date(),
+    totalSpent: snapshot.total_spent,
+    mediaDiaria: snapshot.media_diaria,
+    projecaoMensal: snapshot.projecao_mensal,
+    saldoPrevisto: snapshot.saldo_previsto,
+    categories: chartSlices.map((slice) => ({
+      name: slice.name,
+      value: slice.value,
+      percent: slice.percent,
+      color: slice.color,
+    })),
+  }), [chartSlices, monthLabel, snapshot.media_diaria, snapshot.projecao_mensal, snapshot.saldo_previsto, snapshot.total_spent]);
+
+  const handleExport = async (format: ExportFormat) => {
+    setLoadingFormat(format);
+    try {
+      await exportFinancialReport(format, { ...exportData, generatedAt: new Date() });
+      setExportModalVisible(false);
+      showExportResult();
+    } catch (error) {
+      showExportResult(error);
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
 
   const rows: { label: string; value: number; emphasis?: "positive" | "negative" | "neutral" }[] = [
     { label: "Salário", value: snapshot.salary },
@@ -88,10 +126,22 @@ export default function ResumoScreen() {
         <View style={{ height: 24 }} />
         <View testID="resumo-expenses-pie-chart" style={[styles.chartBox, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
           <View style={styles.chartHeader}>
-            <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Gastos por categoria</Text>
-            <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}> 
-              {snapshot.total_spent > 0 ? formatBRL(snapshot.total_spent) : "Nenhum gasto registrado"}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Gastos por categoria</Text>
+              <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}> 
+                {snapshot.total_spent > 0 ? formatBRL(snapshot.total_spent) : "Nenhum gasto registrado"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              activeOpacity={0.75}
+              onPress={() => setExportModalVisible(true)}
+              style={[styles.exportButton, { backgroundColor: colors.primarySoft, borderColor: colors.primary }]}
+              testID="resumo-export-button"
+            >
+              <Ionicons name="download-outline" size={16} color={colors.primary} />
+              <Text style={[styles.exportButtonText, { color: colors.primary }]}>Exportar</Text>
+            </TouchableOpacity>
           </View>
 
           {chartSlices.length === 0 ? (
@@ -128,6 +178,13 @@ export default function ResumoScreen() {
           </Text>
         </View>
       </ScrollView>
+      <ExportModal
+        visible={exportModalVisible}
+        loadingFormat={loadingFormat}
+        colors={colors}
+        onClose={() => setExportModalVisible(false)}
+        onExport={handleExport}
+      />
     </SafeAreaView>
   );
 }
@@ -213,9 +270,11 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: fontSizes.body, fontWeight: "500" },
   rowValue: { fontSize: fontSizes.body, fontWeight: "700" },
   chartBox: { borderRadius: radii.lg, borderWidth: 1, padding: spacing.base },
-  chartHeader: { marginBottom: spacing.base },
+  chartHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: spacing.md, marginBottom: spacing.base },
   chartTitle: { fontSize: fontSizes.h3, fontWeight: "700", letterSpacing: -0.2 },
   chartSubtitle: { fontSize: fontSizes.small, marginTop: 4 },
+  exportButton: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 1, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 8 },
+  exportButtonText: { fontSize: fontSizes.small, fontWeight: "800" },
   chartContent: { alignItems: "center", gap: spacing.lg },
   emptyChart: {
     minHeight: 150,
