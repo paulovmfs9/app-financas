@@ -130,7 +130,7 @@ service cloud.firestore {
       && request.resource.data.name is string
       && request.resource.data.amount is number
       && request.resource.data.amount > 0
-      && request.resource.data.due_day is int
+      && request.resource.data.due_day is number
       && request.resource.data.due_day >= 1
       && request.resource.data.due_day <= 31
       && request.resource.data.is_active is bool

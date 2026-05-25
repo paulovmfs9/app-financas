@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,7 +7,7 @@ import { useTheme } from "../../src/providers/ThemeProvider";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useExpenses } from "../../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
-import { formatBRL, formatBRLCompact } from "../../src/utils/format";
+import { formatBRL, formatBRLCompact, parseBRL } from "../../src/utils/format";
 import { categoryById } from "../../src/models/Category";
 
 const MONTHS_PT = [
@@ -18,9 +18,15 @@ const MONTHS_PT = [
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
-  const { snapshot, expenses, fixedBills, loading, deleteExpense, usageLabel, hasUnlimitedExpenses } = useExpenses();
+  const { snapshot, expenses, fixedBills, loading, deleteExpense, addFixedBill, deleteFixedBill, usageLabel, hasUnlimitedExpenses } = useExpenses();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showFixedBills, setShowFixedBills] = useState(false);
+  const [fixedBillName, setFixedBillName] = useState("");
+  const [fixedBillAmount, setFixedBillAmount] = useState("");
+  const [fixedBillDueDay, setFixedBillDueDay] = useState("1");
+  const [savingFixedBill, setSavingFixedBill] = useState(false);
+  const [deletingFixedBillId, setDeletingFixedBillId] = useState<string | null>(null);
   const router = useRouter();
 
   const now = new Date();
@@ -55,6 +61,48 @@ export default function HomeScreen() {
       Alert.alert("Erro", "Não foi possível remover o gasto. Tente novamente.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleAddFixedBill = async () => {
+    const name = fixedBillName.trim();
+    const amount = parseBRL(fixedBillAmount);
+    const dueDay = Number.parseInt(fixedBillDueDay, 10);
+
+    if (!name) {
+      Alert.alert("Nome obrigatório", "Informe o nome da conta fixa.");
+      return;
+    }
+    if (amount <= 0) {
+      Alert.alert("Valor inválido", "Digite um valor maior que zero.");
+      return;
+    }
+    if (!Number.isFinite(dueDay) || dueDay < 1 || dueDay > 31) {
+      Alert.alert("Vencimento inválido", "Informe um dia entre 1 e 31.");
+      return;
+    }
+
+    setSavingFixedBill(true);
+    try {
+      await addFixedBill({ name, amount, due_day: dueDay, is_active: true });
+      setFixedBillName("");
+      setFixedBillAmount("");
+      setFixedBillDueDay("1");
+    } catch {
+      Alert.alert("Erro", "Não foi possível salvar a conta fixa.");
+    } finally {
+      setSavingFixedBill(false);
+    }
+  };
+
+  const handleDeleteFixedBill = async (id: string) => {
+    setDeletingFixedBillId(id);
+    try {
+      await deleteFixedBill(id);
+    } catch {
+      Alert.alert("Erro", "Não foi possível remover a conta fixa.");
+    } finally {
+      setDeletingFixedBillId(null);
     }
   };
 
@@ -116,7 +164,7 @@ export default function HomeScreen() {
         <TouchableOpacity
           testID="home-fixed-bills-card"
           activeOpacity={0.82}
-          onPress={() => router.push("/fixed-bills" as any)}
+          onPress={() => setShowFixedBills((visible) => !visible)}
           style={[styles.fixedBillsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
         >
           <View style={[styles.fixedBillsIcon, { backgroundColor: colors.primarySoft }]}> 
@@ -132,6 +180,74 @@ export default function HomeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </TouchableOpacity>
+
+        {showFixedBills ? (
+          <View testID="home-fixed-bills-panel" style={[styles.fixedBillsPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+            <Text style={[styles.fixedBillsPanelTitle, { color: colors.textPrimary }]}>Adicionar conta fixa</Text>
+            <TextInput
+              testID="home-fixed-bill-name-input"
+              style={[styles.fixedBillsInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+              placeholder="Ex: Aluguel, internet, energia"
+              placeholderTextColor={colors.textMuted}
+              value={fixedBillName}
+              onChangeText={setFixedBillName}
+            />
+            <View style={styles.fixedBillsFormRow}>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  testID="home-fixed-bill-amount-input"
+                  style={[styles.fixedBillsInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                  placeholder="Valor"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="decimal-pad"
+                  value={fixedBillAmount}
+                  onChangeText={setFixedBillAmount}
+                />
+              </View>
+              <TextInput
+                testID="home-fixed-bill-due-day-input"
+                style={[styles.fixedBillsInput, styles.fixedBillsDayInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                placeholder="Dia"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="number-pad"
+                maxLength={2}
+                value={fixedBillDueDay}
+                onChangeText={setFixedBillDueDay}
+              />
+            </View>
+            <TouchableOpacity
+              testID="home-fixed-bill-save-button"
+              activeOpacity={0.85}
+              disabled={savingFixedBill}
+              onPress={handleAddFixedBill}
+              style={[styles.fixedBillsSaveButton, { backgroundColor: colors.primary, opacity: savingFixedBill ? 0.7 : 1 }]}
+            >
+              {savingFixedBill ? <ActivityIndicator color="#fff" /> : <Text style={styles.fixedBillsSaveText}>Salvar conta fixa</Text>}
+            </TouchableOpacity>
+
+            {fixedBills.length > 0 ? (
+              <View style={styles.fixedBillsList}>
+                {fixedBills.map((bill) => (
+                  <View key={bill.id} style={[styles.fixedBillItem, { borderTopColor: colors.border }]}> 
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.fixedBillItemName, { color: colors.textPrimary }]} numberOfLines={1}>{bill.name}</Text>
+                      <Text style={[styles.fixedBillItemSub, { color: colors.textMuted }]}>Dia {bill.due_day} • {formatBRL(bill.amount)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      testID={`home-fixed-bill-delete-${bill.id}`}
+                      activeOpacity={0.75}
+                      disabled={deletingFixedBillId === bill.id}
+                      onPress={() => handleDeleteFixedBill(bill.id)}
+                      style={[styles.fixedBillDeleteButton, { backgroundColor: colors.danger + "14" }]}
+                    >
+                      {deletingFixedBillId === bill.id ? <ActivityIndicator size="small" color={colors.danger} /> : <Ionicons name="trash-outline" size={17} color={colors.danger} />}
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Recent expenses */}
         <View style={styles.section}>
@@ -277,6 +393,18 @@ const styles = StyleSheet.create({
   fixedBillsAmountWrap: { alignItems: "flex-end" },
   fixedBillsAmount: { fontSize: fontSizes.body, fontWeight: "900" },
   fixedBillsCount: { fontSize: 11, marginTop: 2 },
+  fixedBillsPanel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.base, marginTop: spacing.sm },
+  fixedBillsPanelTitle: { fontSize: fontSizes.body, fontWeight: "800", marginBottom: spacing.md },
+  fixedBillsInput: { borderWidth: 1, borderRadius: radii.md, paddingHorizontal: spacing.base, paddingVertical: 12, fontSize: fontSizes.body, marginBottom: spacing.sm },
+  fixedBillsFormRow: { flexDirection: "row", gap: spacing.sm },
+  fixedBillsDayInput: { width: 82, textAlign: "center" },
+  fixedBillsSaveButton: { paddingVertical: 14, borderRadius: radii.md, alignItems: "center", justifyContent: "center", marginTop: spacing.xs },
+  fixedBillsSaveText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "800" },
+  fixedBillsList: { marginTop: spacing.base },
+  fixedBillItem: { flexDirection: "row", alignItems: "center", gap: spacing.sm, borderTopWidth: 1, paddingTop: spacing.sm, marginTop: spacing.sm },
+  fixedBillItemName: { fontSize: fontSizes.small, fontWeight: "800" },
+  fixedBillItemSub: { fontSize: fontSizes.micro, marginTop: 2 },
+  fixedBillDeleteButton: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   section: { marginTop: spacing.xxl },
   sectionTitle: { fontSize: fontSizes.h3, fontWeight: "700", marginBottom: spacing.md, letterSpacing: -0.3 },
   emptyBox: { padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, alignItems: "center" },

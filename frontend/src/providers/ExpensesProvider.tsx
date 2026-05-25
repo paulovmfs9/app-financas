@@ -43,7 +43,7 @@ type MonetizationModal = "limit" | "upgrade" | "payment" | null;
 const Ctx = createContext<ExpensesCtx | null>(null);
 
 export function ExpensesProvider({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, profile } = useAuth();
+  const { firebaseUser, profile, updateProfile } = useAuth();
   const { colors } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [fixedBills, setFixedBills] = useState<FixedBill[]>([]);
@@ -104,17 +104,17 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     ? "Plano Standard ativo - gastos ilimitados"
     : `Plano Básico: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT} gastos`;
 
-  const fixedBillsTotal = useMemo(
+  const recurringFixedBillsTotal = useMemo(
     () => fixedBills.filter((bill) => bill.is_active).reduce((sum, bill) => sum + bill.amount, 0),
     [fixedBills]
   );
+  const legacyFixedBillsTotal = profile?.fixed_bills_total ?? 0;
+  const fixedBillsTotal = fixedBills.length > 0 ? recurringFixedBillsTotal : legacyFixedBillsTotal;
 
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
-    const legacyBills = profile?.fixed_bills_total ?? 0;
-    const bills = fixedBills.length > 0 ? fixedBillsTotal : legacyBills;
-    return computeSnapshot(salary, bills, expenses);
-  }, [expenses, fixedBills.length, fixedBillsTotal, profile?.monthly_salary, profile?.fixed_bills_total]);
+    return computeSnapshot(salary, fixedBillsTotal, expenses);
+  }, [expenses, fixedBillsTotal, profile?.monthly_salary]);
 
   const openUpgradeModal = useCallback(() => {
     showUpgradeModal(() => setActiveModal("upgrade"));
@@ -164,9 +164,13 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const addFixedBill = useCallback(
     async (input: FixedBillInput) => {
       if (!firebaseUser) throw new Error("Não autenticado");
-      await FixedBillRepository.create(firebaseUser.uid, input);
+      try {
+        await FixedBillRepository.create(firebaseUser.uid, input);
+      } catch {
+        await updateProfile({ fixed_bills_total: fixedBillsTotal + input.amount });
+      }
     },
-    [firebaseUser]
+    [firebaseUser, fixedBillsTotal, updateProfile]
   );
 
   const deleteFixedBill = useCallback(
