@@ -178,7 +178,9 @@ export default function HomeScreen() {
             <Text style={[styles.fixedBillsAmount, { color: colors.textPrimary }]}>{formatBRLCompact(snapshot.fixed_bills)}</Text>
             <Text style={[styles.fixedBillsCount, { color: colors.textMuted }]}>{activeFixedBills.length} ativa{activeFixedBills.length === 1 ? "" : "s"}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          <View style={[styles.fixedBillsChevron, { backgroundColor: colors.primarySoft }]}> 
+            <Ionicons name={showFixedBills ? "chevron-down" : "chevron-forward"} size={20} color={colors.primary} />
+          </View>
         </TouchableOpacity>
 
         {showFixedBills ? (
@@ -401,6 +403,7 @@ const styles = StyleSheet.create({
   fixedBillsSub: { fontSize: fontSizes.micro, marginTop: 2 },
   fixedBillsAmountWrap: { alignItems: "flex-end" },
   fixedBillsAmount: { fontSize: fontSizes.body, fontWeight: "900" },
+  fixedBillsChevron: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   fixedBillsCount: { fontSize: 11, marginTop: 2 },
   fixedBillsPanel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.base, marginTop: spacing.sm },
   fixedBillsPanelTitle: { fontSize: fontSizes.body, fontWeight: "800", marginBottom: 4 },
