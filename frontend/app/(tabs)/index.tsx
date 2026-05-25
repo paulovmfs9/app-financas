@@ -18,7 +18,7 @@ const MONTHS_PT = [
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
-  const { snapshot, expenses, loading, deleteExpense, usageLabel, hasUnlimitedExpenses } = useExpenses();
+  const { snapshot, expenses, fixedBills, loading, deleteExpense, usageLabel, hasUnlimitedExpenses } = useExpenses();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const router = useRouter();
@@ -44,6 +44,7 @@ export default function HomeScreen() {
       : colors.info;
 
   const recent = expenses.slice(0, 5);
+  const activeFixedBills = fixedBills.filter((bill) => bill.is_active);
 
   const handleDeleteExpense = async (id: string) => {
     try {
@@ -111,6 +112,26 @@ export default function HomeScreen() {
           <Card title="Média diária" value={formatBRLCompact(snapshot.media_diaria)} icon="calendar-outline" iconColor={colors.info} subtitle={`Ideal: ${formatBRLCompact(snapshot.ideal_diario)}`} colors={colors} />
           <Card title="Projeção mensal" value={formatBRLCompact(snapshot.projecao_mensal)} icon="stats-chart" iconColor={colors.warning} subtitle={`Previsto: ${formatBRLCompact(snapshot.saldo_previsto)}`} colors={colors} />
         </View>
+
+        <TouchableOpacity
+          testID="home-fixed-bills-card"
+          activeOpacity={0.82}
+          onPress={() => router.push("/fixed-bills" as any)}
+          style={[styles.fixedBillsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <View style={[styles.fixedBillsIcon, { backgroundColor: colors.primarySoft }]}> 
+            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.fixedBillsTitle, { color: colors.textPrimary }]}>Contas fixas</Text>
+            <Text style={[styles.fixedBillsSub, { color: colors.textSecondary }]}>Todo mês já começa contando com elas</Text>
+          </View>
+          <View style={styles.fixedBillsAmountWrap}>
+            <Text style={[styles.fixedBillsAmount, { color: colors.textPrimary }]}>{formatBRLCompact(snapshot.fixed_bills)}</Text>
+            <Text style={[styles.fixedBillsCount, { color: colors.textMuted }]}>{activeFixedBills.length} ativa{activeFixedBills.length === 1 ? "" : "s"}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
 
         {/* Recent expenses */}
         <View style={styles.section}>
@@ -249,6 +270,13 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: fontSizes.micro, fontWeight: "600", letterSpacing: 0.3 },
   cardValue: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
   cardSub: { fontSize: 11, marginTop: 4 },
+  fixedBillsCard: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginTop: spacing.lg },
+  fixedBillsIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  fixedBillsTitle: { fontSize: fontSizes.body, fontWeight: "800" },
+  fixedBillsSub: { fontSize: fontSizes.micro, marginTop: 2 },
+  fixedBillsAmountWrap: { alignItems: "flex-end" },
+  fixedBillsAmount: { fontSize: fontSizes.body, fontWeight: "900" },
+  fixedBillsCount: { fontSize: 11, marginTop: 2 },
   section: { marginTop: spacing.xxl },
   sectionTitle: { fontSize: fontSizes.h3, fontWeight: "700", marginBottom: spacing.md, letterSpacing: -0.3 },
   emptyBox: { padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, alignItems: "center" },

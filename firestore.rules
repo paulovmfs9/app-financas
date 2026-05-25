@@ -106,6 +106,38 @@ service cloud.firestore {
       && request.resource.data.created_at is number;
     }
 
+
+    function validFixedBillDoc(uid) {
+      return request.resource.data.keys().hasOnly([
+        'user_id',
+        'name',
+        'amount',
+        'due_day',
+        'is_active',
+        'created_at',
+        'updated_at'
+      ])
+      && request.resource.data.keys().hasAll([
+        'user_id',
+        'name',
+        'amount',
+        'due_day',
+        'is_active',
+        'created_at',
+        'updated_at'
+      ])
+      && request.resource.data.user_id == uid
+      && request.resource.data.name is string
+      && request.resource.data.amount is number
+      && request.resource.data.amount > 0
+      && request.resource.data.due_day is int
+      && request.resource.data.due_day >= 1
+      && request.resource.data.due_day <= 31
+      && request.resource.data.is_active is bool
+      && request.resource.data.created_at is number
+      && request.resource.data.updated_at is number;
+    }
+
     // Each user can only access their own profile and expenses.
     match /users/{uid} {
       allow read: if signedInAs(uid);
@@ -116,6 +148,12 @@ service cloud.firestore {
       match /expenses/{expenseId} {
         allow read: if signedInAs(uid);
         allow create, update: if signedInAs(uid) && validExpenseDoc(uid);
+        allow delete: if signedInAs(uid);
+      }
+
+      match /fixedBills/{fixedBillId} {
+        allow read: if signedInAs(uid);
+        allow create, update: if signedInAs(uid) && validFixedBillDoc(uid);
         allow delete: if signedInAs(uid);
       }
     }

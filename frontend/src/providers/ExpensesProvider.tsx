@@ -6,7 +6,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import type { Expense, ExpenseInput } from "../models/Expense";
+import type { FixedBill, FixedBillInput } from "../models/FixedBill";
 import { ExpenseRepository } from "../repositories/ExpenseRepository";
+import { FixedBillRepository } from "../repositories/FixedBillRepository";
 import { useAuth } from "./AuthProvider";
 import { useTheme } from "./ThemeProvider";
 import { computeSnapshot, monthBounds, monthKey, FinanceSnapshot } from "../utils/finance";
@@ -23,12 +25,16 @@ import { spacing, radii, fontSizes } from "../utils/theme";
 interface ExpensesCtx {
   loading: boolean;
   expenses: Expense[];
+  fixedBills: FixedBill[];
+  fixedBillsTotal: number;
   snapshot: FinanceSnapshot;
   monthlyExpenseCount: number;
   hasUnlimitedExpenses: boolean;
   usageLabel: string;
   addExpense: (input: ExpenseInput) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  addFixedBill: (input: FixedBillInput) => Promise<void>;
+  deleteFixedBill: (id: string) => Promise<void>;
   openUpgradeModal: () => void;
 }
 
@@ -40,6 +46,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const { firebaseUser, profile } = useAuth();
   const { colors } = useTheme();
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [fixedBills, setFixedBills] = useState<FixedBill[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(() => monthKey());
   const [activeModal, setActiveModal] = useState<MonetizationModal>(null);
@@ -57,6 +64,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!firebaseUser) {
       setExpenses([]);
+      setFixedBills([]);
       setLoading(false);
       return;
     }
@@ -75,17 +83,38 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [firebaseUser, currentMonth]);
 
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setFixedBills([]);
+      return;
+    }
+
+    const unsub = FixedBillRepository.subscribeAll(
+      firebaseUser.uid,
+      setFixedBills,
+      () => setFixedBills([])
+    );
+    return () => unsub();
+  }, [firebaseUser]);
+
   const hasUnlimitedExpenses = isUnlimitedPlan(profile);
   const monthlyExpenseCount = expenses.length;
   const usageLabel = hasUnlimitedExpenses
     ? "Plano Standard ativo - gastos ilimitados"
     : `Plano Básico: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT} gastos`;
 
+  const fixedBillsTotal = useMemo(
+    () => fixedBills.filter((bill) => bill.is_active).reduce((sum, bill) => sum + bill.amount, 0),
+    [fixedBills]
+  );
+
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
-    const bills = profile?.fixed_bills_total ?? 0;
+    const legacyBills = profile?.fixed_bills_total ?? 0;
+    const bills = fixedBills.length > 0 ? fixedBillsTotal : legacyBills;
     return computeSnapshot(salary, bills, expenses);
-  }, [expenses, profile?.monthly_salary, profile?.fixed_bills_total]);
+  }, [expenses, fixedBills.length, fixedBillsTotal, profile?.monthly_salary, profile?.fixed_bills_total]);
 
   const openUpgradeModal = useCallback(() => {
     showUpgradeModal(() => setActiveModal("upgrade"));
@@ -132,17 +161,37 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     [firebaseUser]
   );
 
+  const addFixedBill = useCallback(
+    async (input: FixedBillInput) => {
+      if (!firebaseUser) throw new Error("Não autenticado");
+      await FixedBillRepository.create(firebaseUser.uid, input);
+    },
+    [firebaseUser]
+  );
+
+  const deleteFixedBill = useCallback(
+    async (id: string) => {
+      if (!firebaseUser) throw new Error("Não autenticado");
+      await FixedBillRepository.remove(firebaseUser.uid, id);
+    },
+    [firebaseUser]
+  );
+
   return (
     <Ctx.Provider
       value={{
         loading,
         expenses,
+        fixedBills,
+        fixedBillsTotal,
         snapshot,
         monthlyExpenseCount,
         hasUnlimitedExpenses,
         usageLabel,
         addExpense,
         deleteExpense,
+        addFixedBill,
+        deleteFixedBill,
         openUpgradeModal,
       }}
     >
