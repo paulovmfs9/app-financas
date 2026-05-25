@@ -184,6 +184,9 @@ export default function HomeScreen() {
         {showFixedBills ? (
           <View testID="home-fixed-bills-panel" style={[styles.fixedBillsPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
             <Text style={[styles.fixedBillsPanelTitle, { color: colors.textPrimary }]}>Adicionar conta fixa</Text>
+            <Text style={[styles.fixedBillsPanelHint, { color: colors.textSecondary }]}>Esse valor entra automaticamente no cálculo de todo novo mês.</Text>
+
+            <Text style={[styles.fixedBillsLabel, { color: colors.textSecondary }]}>Nome da conta</Text>
             <TextInput
               testID="home-fixed-bill-name-input"
               style={[styles.fixedBillsInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
@@ -192,28 +195,34 @@ export default function HomeScreen() {
               value={fixedBillName}
               onChangeText={setFixedBillName}
             />
+            <Text style={[styles.fixedBillsHelper, { color: colors.textMuted }]}>Identifica qual despesa será repetida todo mês.</Text>
+
             <View style={styles.fixedBillsFormRow}>
               <View style={{ flex: 1 }}>
+                <Text style={[styles.fixedBillsLabel, { color: colors.textSecondary }]}>Valor mensal</Text>
                 <TextInput
                   testID="home-fixed-bill-amount-input"
                   style={[styles.fixedBillsInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                  placeholder="Valor"
+                  placeholder="Ex: 1.200,00"
                   placeholderTextColor={colors.textMuted}
                   keyboardType="decimal-pad"
                   value={fixedBillAmount}
                   onChangeText={setFixedBillAmount}
                 />
               </View>
-              <TextInput
-                testID="home-fixed-bill-due-day-input"
-                style={[styles.fixedBillsInput, styles.fixedBillsDayInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
-                placeholder="Dia"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="number-pad"
-                maxLength={2}
-                value={fixedBillDueDay}
-                onChangeText={setFixedBillDueDay}
-              />
+              <View style={styles.fixedBillsDayWrap}>
+                <Text style={[styles.fixedBillsLabel, { color: colors.textSecondary }]}>Vence dia</Text>
+                <TextInput
+                  testID="home-fixed-bill-due-day-input"
+                  style={[styles.fixedBillsInput, styles.fixedBillsDayInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                  placeholder="Ex: 5"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={fixedBillDueDay}
+                  onChangeText={setFixedBillDueDay}
+                />
+              </View>
             </View>
             <TouchableOpacity
               testID="home-fixed-bill-save-button"
@@ -394,10 +403,14 @@ const styles = StyleSheet.create({
   fixedBillsAmount: { fontSize: fontSizes.body, fontWeight: "900" },
   fixedBillsCount: { fontSize: 11, marginTop: 2 },
   fixedBillsPanel: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.base, marginTop: spacing.sm },
-  fixedBillsPanelTitle: { fontSize: fontSizes.body, fontWeight: "800", marginBottom: spacing.md },
+  fixedBillsPanelTitle: { fontSize: fontSizes.body, fontWeight: "800", marginBottom: 4 },
+  fixedBillsPanelHint: { fontSize: fontSizes.micro, lineHeight: 18, marginBottom: spacing.base },
+  fixedBillsLabel: { fontSize: fontSizes.micro, fontWeight: "800", marginBottom: 6 },
+  fixedBillsHelper: { fontSize: 11, lineHeight: 16, marginTop: -4, marginBottom: spacing.base },
   fixedBillsInput: { borderWidth: 1, borderRadius: radii.md, paddingHorizontal: spacing.base, paddingVertical: 12, fontSize: fontSizes.body, marginBottom: spacing.sm },
   fixedBillsFormRow: { flexDirection: "row", gap: spacing.sm },
-  fixedBillsDayInput: { width: 82, textAlign: "center" },
+  fixedBillsDayWrap: { width: 104 },
+  fixedBillsDayInput: { textAlign: "center" },
   fixedBillsSaveButton: { paddingVertical: 14, borderRadius: radii.md, alignItems: "center", justifyContent: "center", marginTop: spacing.xs },
   fixedBillsSaveText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "800" },
   fixedBillsList: { marginTop: spacing.base },
