@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function validSubscriptionTypes() {
-      return request.resource.data.plan in ['free', 'pro']
+      return request.resource.data.plan in ['free', 'basic', 'standard', 'pro']
         && request.resource.data.subscriptionStatus in ['inactive', 'active', 'canceled']
         && (request.resource.data.subscriptionProvider == null || request.resource.data.subscriptionProvider in ['web', 'mercadopago', 'stripe', 'apple', 'google', 'revenuecat'])
         && request.resource.data.subscriptionPrice is number
@@ -16,7 +16,7 @@ service cloud.firestore {
     }
 
     function hasDefaultFreeSubscription() {
-      return request.resource.data.plan == 'free'
+      return request.resource.data.plan in ['free', 'basic']
         && request.resource.data.subscriptionStatus == 'inactive'
         && request.resource.data.subscriptionProvider == null
         && request.resource.data.subscriptionPrice == 9.9

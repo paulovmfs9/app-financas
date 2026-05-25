@@ -58,6 +58,7 @@ function Gate() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="plans" />
         <Stack.Screen
           name="add-expense"
           options={{ presentation: "modal", animation: "slide_from_bottom" }}

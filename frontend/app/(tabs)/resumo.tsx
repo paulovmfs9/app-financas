@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import Svg, { Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/providers/ThemeProvider";
@@ -37,7 +38,8 @@ type ChartSlice = {
 
 export default function ResumoScreen() {
   const { colors } = useTheme();
-  const { snapshot, usageLabel, isPro, openUpgradeModal } = useExpenses();
+  const { snapshot, usageLabel, hasUnlimitedExpenses } = useExpenses();
+  const router = useRouter();
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null);
   const now = new Date();
@@ -92,10 +94,10 @@ export default function ResumoScreen() {
         <Text style={[styles.title, { color: colors.textPrimary }]}>{monthLabel}</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Visão completa das suas finanças deste mês.</Text>
 
-        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: isPro ? colors.primary : colors.border }]}> 
-          <Text style={[styles.planIndicatorText, { color: isPro ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
-          {!isPro ? (
-            <Text testID="resumo-upgrade-button" onPress={openUpgradeModal} style={[styles.planAction, { color: colors.primary }]}>Plano Pro</Text>
+        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: hasUnlimitedExpenses ? colors.primary : colors.border }]}> 
+          <Text style={[styles.planIndicatorText, { color: hasUnlimitedExpenses ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+          {!hasUnlimitedExpenses ? (
+            <Text testID="resumo-upgrade-button" onPress={() => router.push("/plans" as any)} style={[styles.planAction, { color: colors.primary }]}>Ver planos</Text>
           ) : null}
         </View>
 

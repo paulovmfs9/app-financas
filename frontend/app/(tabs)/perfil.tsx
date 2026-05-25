@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
@@ -21,6 +22,7 @@ import { parseBRL } from "../../src/utils/format";
 export default function PerfilScreen() {
   const { colors, pref, setPref } = useTheme();
   const { profile, signOut, updateProfile } = useAuth();
+  const router = useRouter();
 
   const [name, setName] = useState(profile?.name ?? "");
   const [salary, setSalary] = useState(String(profile?.monthly_salary ?? 0));
@@ -121,6 +123,20 @@ export default function PerfilScreen() {
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Salvar</Text>}
           </TouchableOpacity>
 
+
+          <Text style={[styles.section, { color: colors.textPrimary }]}>Plano</Text>
+          <TouchableOpacity
+            testID="perfil-plans-button"
+            onPress={() => router.push("/plans" as any)}
+            style={[styles.plansBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.textPrimary, fontWeight: "800", fontSize: fontSizes.body }}>Ver planos</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSizes.small, marginTop: 2 }}>Básico, Standard e Pro</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
           <Text style={[styles.section, { color: colors.textPrimary }]}>Aparência</Text>
           <View style={styles.themeRow}>
             {(["light", "dark", "system"] as const).map((m) => {
@@ -202,6 +218,7 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
   themeRow: { flexDirection: "row", gap: spacing.sm },
   themeBtn: { flex: 1, paddingVertical: 12, paddingHorizontal: spacing.base, borderRadius: radii.lg, borderWidth: 1, alignItems: "center" },
+  plansBtn: { padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, alignItems: "center", flexDirection: "row" },
   logoutBtn: { marginTop: spacing.xxl, paddingVertical: 16, borderRadius: radii.lg, borderWidth: 1, alignItems: "center", justifyContent: "center", flexDirection: "row" },
   footnote: { textAlign: "center", marginTop: spacing.xl, fontSize: fontSizes.micro },
   logoutConfirm: { marginTop: spacing.xxl, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1 },

@@ -18,7 +18,7 @@ const MONTHS_PT = [
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
-  const { snapshot, expenses, loading, deleteExpense, usageLabel, isPro, openUpgradeModal } = useExpenses();
+  const { snapshot, expenses, loading, deleteExpense, usageLabel, hasUnlimitedExpenses } = useExpenses();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const router = useRouter();
@@ -86,11 +86,11 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: isPro ? colors.primary : colors.border }]}> 
-          <Text style={[styles.planIndicatorText, { color: isPro ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
-          {!isPro ? (
-            <TouchableOpacity testID="home-upgrade-button" activeOpacity={0.75} onPress={openUpgradeModal}>
-              <Text style={[styles.planAction, { color: colors.primary }]}>Plano Pro</Text>
+        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: hasUnlimitedExpenses ? colors.primary : colors.border }]}> 
+          <Text style={[styles.planIndicatorText, { color: hasUnlimitedExpenses ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+          {!hasUnlimitedExpenses ? (
+            <TouchableOpacity testID="home-upgrade-button" activeOpacity={0.75} onPress={() => router.push("/plans" as any)}>
+              <Text style={[styles.planAction, { color: colors.primary }]}>Ver planos</Text>
             </TouchableOpacity>
           ) : null}
         </View>

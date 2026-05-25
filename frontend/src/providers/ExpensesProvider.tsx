@@ -14,7 +14,7 @@ import {
   canAddExpense,
   FREE_MONTHLY_EXPENSE_LIMIT,
   handleExpenseLimitReached,
-  isUserPro,
+  isUnlimitedPlan,
   LIMIT_REACHED_MESSAGE,
   openUpgradeModal as showUpgradeModal,
 } from "../services/MonetizationService";
@@ -25,7 +25,7 @@ interface ExpensesCtx {
   expenses: Expense[];
   snapshot: FinanceSnapshot;
   monthlyExpenseCount: number;
-  isPro: boolean;
+  hasUnlimitedExpenses: boolean;
   usageLabel: string;
   addExpense: (input: ExpenseInput) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
@@ -75,11 +75,11 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [firebaseUser, currentMonth]);
 
-  const pro = isUserPro(profile);
+  const hasUnlimitedExpenses = isUnlimitedPlan(profile);
   const monthlyExpenseCount = expenses.length;
-  const usageLabel = pro
-    ? "Plano Pro ativo \u2014 gastos ilimitados"
-    : `Gastos do mês: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT}`;
+  const usageLabel = hasUnlimitedExpenses
+    ? "Plano Standard ativo - gastos ilimitados"
+    : `Plano Básico: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT} gastos`;
 
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
@@ -139,7 +139,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
         expenses,
         snapshot,
         monthlyExpenseCount,
-        isPro: pro,
+        hasUnlimitedExpenses,
         usageLabel,
         addExpense,
         deleteExpense,
@@ -184,10 +184,10 @@ function MonetizationModalView({
       <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
           {isLimit ? (
             <>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Limite gratuito atingido</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Limite do Plano Básico atingido</Text>
               <Text style={[styles.modalBody, { color: colors.textSecondary }]}>{LIMIT_REACHED_MESSAGE}</Text>
               <TouchableOpacity testID="limit-upgrade-button" activeOpacity={0.85} onPress={showUpgrade} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
-                <Text style={styles.primaryButtonText}>Ver Plano Pro</Text>
+                <Text style={styles.primaryButtonText}>Ver planos</Text>
               </TouchableOpacity>
               <TouchableOpacity testID="limit-later-button" activeOpacity={0.75} onPress={close} style={styles.secondaryButton}> 
                 <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Agora não</Text>
@@ -197,7 +197,7 @@ function MonetizationModalView({
 
           {isUpgrade ? (
             <>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Plano Pro</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Plano Standard</Text>
               <Text style={[styles.price, { color: colors.primary }]}>R$ 9,90/mês</Text>
               <View style={styles.benefits}>
                 {[
@@ -211,7 +211,7 @@ function MonetizationModalView({
                 ))}
               </View>
               <TouchableOpacity testID="upgrade-subscribe-button" activeOpacity={0.85} onPress={showPaymentInfo} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
-                <Text style={styles.primaryButtonText}>Assinar Plano Pro</Text>
+                <Text style={styles.primaryButtonText}>Assinar Plano Standard</Text>
               </TouchableOpacity>
               <TouchableOpacity testID="upgrade-later-button" activeOpacity={0.75} onPress={close} style={styles.secondaryButton}> 
                 <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Agora não</Text>

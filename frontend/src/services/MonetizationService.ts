@@ -4,12 +4,71 @@ import type { User } from "../models/User";
 import { monthBounds } from "../utils/finance";
 
 export const FREE_MONTHLY_EXPENSE_LIMIT = 30;
+export const STANDARD_PRICE_LABEL = "R$ 9,90/mês";
 export const LIMIT_REACHED_MESSAGE =
-  "Você atingiu o limite de 30 gastos gratuitos neste mês. Para continuar adicionando gastos ilimitados, assine o Plano Pro por apenas R$ 9,90/mês.";
+  "Você atingiu o limite de 30 gastos do Plano Básico neste mês. Para continuar adicionando gastos ilimitados, assine o Plano Standard por apenas R$ 9,90/mês.";
+
+export type PlanKey = "basic" | "standard" | "pro";
+
+export interface PlanDefinition {
+  key: PlanKey;
+  name: string;
+  originalPrice: string;
+  currentPrice: string;
+  description: string;
+  features: string[];
+  highlighted?: boolean;
+  comingSoon?: boolean;
+}
+
+export const PLAN_DEFINITIONS: PlanDefinition[] = [
+  {
+    key: "basic",
+    name: "Básico",
+    originalPrice: "R$ 9,90",
+    currentPrice: "R$ 0,00",
+    description: "Para começar a registrar gastos e entender o mês.",
+    features: [
+      `até ${FREE_MONTHLY_EXPENSE_LIMIT} gastos por mês`,
+      "saldo restante do mês",
+      "alertas financeiros simples",
+      "resumo mensal básico",
+    ],
+  },
+  {
+    key: "standard",
+    name: "Standard",
+    originalPrice: "R$ 47,90",
+    currentPrice: "R$ 9,90",
+    description: "O antigo Plano Pro, agora com o nome certo para uso completo.",
+    highlighted: true,
+    features: [
+      "gastos ilimitados",
+      "controle financeiro completo",
+      "média diária de gastos",
+      "projeção de gastos até o fim do mês",
+      "exportação de relatórios",
+    ],
+  },
+  {
+    key: "pro",
+    name: "Pro",
+    originalPrice: "R$ 97,70",
+    currentPrice: "R$ 47,90",
+    description: "Plano avançado reservado para as próximas funcionalidades.",
+    comingSoon: true,
+    features: [
+      "novas funcionalidades premium",
+      "recursos inteligentes em desenvolvimento",
+      "experiências avançadas de análise",
+      "prioridade para melhorias futuras",
+    ],
+  },
+];
 
 export interface AddExpensePermission {
   allowed: boolean;
-  isPro: boolean;
+  hasUnlimitedExpenses: boolean;
   count: number;
   limit: number;
 }
@@ -36,11 +95,18 @@ function toMillis(value: User["subscriptionExpiresAt"]): number | null {
   return null;
 }
 
-export function isUserPro(userProfile: User | null | undefined): boolean {
+export function normalizePlanKey(plan: User["plan"] | null | undefined): PlanKey {
+  if (plan === "standard") return "standard";
+  if (plan === "pro") return "standard";
+  return "basic";
+}
+
+export function isUnlimitedPlan(userProfile: User | null | undefined): boolean {
   if (!userProfile) return false;
   const expiresAt = toMillis(userProfile.subscriptionExpiresAt);
   const hasNotExpired = expiresAt === null || expiresAt > Date.now();
-  return userProfile.plan === "pro" && userProfile.subscriptionStatus === "active" && hasNotExpired;
+  const plan = normalizePlanKey(userProfile.plan);
+  return (plan === "standard" || plan === "pro") && userProfile.subscriptionStatus === "active" && hasNotExpired;
 }
 
 export async function getCurrentMonthExpenseCount(uid: string): Promise<number> {
@@ -50,15 +116,15 @@ export async function getCurrentMonthExpenseCount(uid: string): Promise<number> 
 
 export async function canAddExpense(uid: string, userProfile?: User | null): Promise<AddExpensePermission> {
   const profile = userProfile ?? (await getCurrentUserProfile(uid));
-  const pro = isUserPro(profile);
-  if (pro) {
-    return { allowed: true, isPro: true, count: 0, limit: FREE_MONTHLY_EXPENSE_LIMIT };
+  const hasUnlimitedExpenses = isUnlimitedPlan(profile);
+  if (hasUnlimitedExpenses) {
+    return { allowed: true, hasUnlimitedExpenses: true, count: 0, limit: FREE_MONTHLY_EXPENSE_LIMIT };
   }
 
   const count = await getCurrentMonthExpenseCount(uid);
   return {
     allowed: count < FREE_MONTHLY_EXPENSE_LIMIT,
-    isPro: false,
+    hasUnlimitedExpenses: false,
     count,
     limit: FREE_MONTHLY_EXPENSE_LIMIT,
   };

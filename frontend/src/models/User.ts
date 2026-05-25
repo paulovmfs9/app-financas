@@ -1,7 +1,7 @@
 /** Domain models (pure TypeScript types). */
 
 export type ThemePref = "light" | "dark" | "system";
-export type UserPlan = "free" | "pro";
+export type UserPlan = "basic" | "standard" | "pro" | "free";
 export type SubscriptionStatus = "inactive" | "active" | "canceled";
 export type SubscriptionProvider = "web" | "mercadopago" | "stripe" | "apple" | "google" | "revenuecat" | null;
 
@@ -24,7 +24,7 @@ export interface User {
 }
 
 export const subscriptionDefaults = () => ({
-  plan: "free" as UserPlan,
+  plan: "basic" as UserPlan,
   subscriptionStatus: "inactive" as SubscriptionStatus,
   subscriptionProvider: null as SubscriptionProvider,
   subscriptionPrice: 9.9,
@@ -41,7 +41,7 @@ export const normalizeUser = (user: Partial<User> & Pick<User, "uid" | "email" |
   created_at: Date.now(),
   ...subscriptionDefaults(),
   ...user,
-  plan: user.plan ?? "free",
+  plan: user.plan ?? "basic",
   subscriptionStatus: user.subscriptionStatus ?? "inactive",
   subscriptionProvider: user.subscriptionProvider ?? null,
   subscriptionPrice: user.subscriptionPrice ?? 9.9,
