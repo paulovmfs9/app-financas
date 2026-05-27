@@ -1,11 +1,9 @@
 /**
- * ExpenseRepository: Firestore CRUD for `users/{uid}/expenses` subcollection.
- * We use a subcollection so each user only sees their own data (security rules
- * can simply check `request.auth.uid == uid`).
+ * ExpenseRepository: Firestore read/delete for `users/{uid}/expenses` and
+ * secure expense creation through the `addExpense` Cloud Function.
  */
 import {
   collection,
-  addDoc,
   deleteDoc,
   doc,
   query,
@@ -15,21 +13,23 @@ import {
   getDocs,
   Unsubscribe,
 } from "firebase/firestore";
-import { db } from "../config/firebase.config";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../config/firebase.config";
 import type { Expense, ExpenseInput } from "../models/Expense";
 
 function colRef(uid: string) {
   return collection(db, "users", uid, "expenses");
 }
 
+interface AddExpenseResult {
+  id: string;
+}
+
 export const ExpenseRepository = {
-  async create(uid: string, input: ExpenseInput): Promise<string> {
-    const docRef = await addDoc(colRef(uid), {
-      ...input,
-      user_id: uid,
-      created_at: Date.now(),
-    });
-    return docRef.id;
+  async create(_uid: string, input: ExpenseInput): Promise<string> {
+    const addExpense = httpsCallable<ExpenseInput, AddExpenseResult>(functions, "addExpense");
+    const result = await addExpense(input);
+    return result.data.id;
   },
 
   async remove(uid: string, expenseId: string): Promise<void> {

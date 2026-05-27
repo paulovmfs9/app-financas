@@ -147,7 +147,7 @@ service cloud.firestore {
 
       match /expenses/{expenseId} {
         allow read: if signedInAs(uid);
-        allow create, update: if signedInAs(uid) && validExpenseDoc(uid);
+        allow create, update: if false;
         allow delete: if signedInAs(uid);
       }
 

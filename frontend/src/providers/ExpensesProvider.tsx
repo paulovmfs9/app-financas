@@ -13,9 +13,8 @@ import { useAuth } from "./AuthProvider";
 import { useTheme } from "./ThemeProvider";
 import { computeSnapshot, monthBounds, monthKey, FinanceSnapshot } from "../utils/finance";
 import {
-  canAddExpense,
   FREE_MONTHLY_EXPENSE_LIMIT,
-  handleExpenseLimitReached,
+  ExpenseLimitError,
   isUnlimitedPlan,
   LIMIT_REACHED_MESSAGE,
   openUpgradeModal as showUpgradeModal,
@@ -123,16 +122,18 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const addExpense = useCallback(
     async (input: ExpenseInput) => {
       if (!firebaseUser) throw new Error("Não autenticado");
-      const permission = await canAddExpense(firebaseUser.uid, profile);
-      if (!permission.allowed) {
-        setActiveModal("limit");
-        handleExpenseLimitReached(openUpgradeModal);
+      try {
+        await ExpenseRepository.create(firebaseUser.uid, input);
+      } catch (err: any) {
+        if (err?.code === "functions/resource-exhausted" || err?.code === "resource-exhausted") {
+          setActiveModal("limit");
+          throw new ExpenseLimitError();
+        }
+        throw err;
       }
-
-      await ExpenseRepository.create(firebaseUser.uid, input);
       // Live snapshot will update automatically via onSnapshot.
     },
-    [firebaseUser, openUpgradeModal, profile]
+    [firebaseUser]
   );
 
   const deleteExpense = useCallback(
