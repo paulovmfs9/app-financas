@@ -8,7 +8,7 @@ service cloud.firestore {
     function validSubscriptionTypes() {
       return request.resource.data.plan in ['free', 'basic', 'standard', 'pro']
         && request.resource.data.subscriptionStatus in ['inactive', 'active', 'canceled']
-        && (request.resource.data.subscriptionProvider == null || request.resource.data.subscriptionProvider in ['web', 'mercadopago', 'stripe', 'apple', 'google', 'revenuecat'])
+        && (request.resource.data.subscriptionProvider == null || request.resource.data.subscriptionProvider in ['web', 'mercadopago', 'stripe', 'apple', 'google', 'revenuecat', 'manual'])
         && request.resource.data.subscriptionPrice is number
         && request.resource.data.subscriptionCurrency == 'BRL'
         && (request.resource.data.subscriptionExpiresAt == null || request.resource.data.subscriptionExpiresAt is number || request.resource.data.subscriptionExpiresAt is timestamp)
@@ -80,33 +80,6 @@ service cloud.firestore {
       && validSubscriptionTypes();
     }
 
-    function validExpenseDoc(uid) {
-      return request.resource.data.keys().hasOnly([
-        'user_id',
-        'amount',
-        'category',
-        'description',
-        'date',
-        'created_at'
-      ])
-      && request.resource.data.keys().hasAll([
-        'user_id',
-        'amount',
-        'category',
-        'description',
-        'date',
-        'created_at'
-      ])
-      && request.resource.data.user_id == uid
-      && request.resource.data.amount is number
-      && request.resource.data.amount > 0
-      && request.resource.data.category is string
-      && request.resource.data.description is string
-      && request.resource.data.date is number
-      && request.resource.data.created_at is number;
-    }
-
-
     function validFixedBillDoc(uid) {
       return request.resource.data.keys().hasOnly([
         'user_id',
@@ -138,7 +111,6 @@ service cloud.firestore {
       && request.resource.data.updated_at is number;
     }
 
-    // Each user can only access their own profile and expenses.
     match /users/{uid} {
       allow read: if signedInAs(uid);
       allow create: if signedInAs(uid) && validUserDoc(uid) && hasDefaultFreeSubscription();
@@ -147,8 +119,7 @@ service cloud.firestore {
 
       match /expenses/{expenseId} {
         allow read: if signedInAs(uid);
-        allow create, update: if false;
-        allow delete: if signedInAs(uid);
+        allow create, update, delete: if false;
       }
 
       match /fixedBills/{fixedBillId} {
@@ -156,6 +127,20 @@ service cloud.firestore {
         allow create, update: if signedInAs(uid) && validFixedBillDoc(uid);
         allow delete: if signedInAs(uid);
       }
+
+      match /usage/{monthId} {
+        allow read: if signedInAs(uid);
+        allow create, update, delete: if false;
+      }
+
+      match /exports/{exportId} {
+        allow read: if signedInAs(uid);
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /paymentIntents/{paymentId} {
+      allow read, write: if false;
     }
   }
 }

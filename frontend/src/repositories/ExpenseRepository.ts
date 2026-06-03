@@ -4,8 +4,6 @@
  */
 import {
   collection,
-  deleteDoc,
-  doc,
   query,
   where,
   orderBy,
@@ -33,7 +31,8 @@ export const ExpenseRepository = {
   },
 
   async remove(uid: string, expenseId: string): Promise<void> {
-    await deleteDoc(doc(db, "users", uid, "expenses", expenseId));
+    const deleteExpense = httpsCallable<{ expenseId: string }, { ok: boolean }>(functions, "deleteExpense");
+    await deleteExpense({ expenseId });
   },
 
   async countMonth(uid: string, startMs: number, endMs: number): Promise<number> {

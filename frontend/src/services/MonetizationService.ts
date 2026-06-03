@@ -4,6 +4,7 @@ import type { User } from "../models/User";
 import { monthBounds } from "../utils/finance";
 
 export const FREE_MONTHLY_EXPENSE_LIMIT = 30;
+export const FREE_MONTHLY_EXPORT_LIMIT = 5;
 export const STANDARD_PRICE_LABEL = "R$ 9,90/mês";
 export const LIMIT_REACHED_MESSAGE =
   "Você atingiu o limite de 30 gastos do Plano Básico neste mês. Para continuar adicionando gastos ilimitados, assine o Plano Standard por apenas R$ 9,90/mês.";
@@ -30,6 +31,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
     description: "Para começar a registrar gastos e entender o mês.",
     features: [
       `até ${FREE_MONTHLY_EXPENSE_LIMIT} gastos por mês`,
+      `até ${FREE_MONTHLY_EXPORT_LIMIT} exportações por mês`,
       "saldo restante do mês",
       "alertas financeiros simples",
       "resumo mensal básico",
@@ -47,7 +49,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       "controle financeiro completo",
       "média diária de gastos",
       "projeção de gastos até o fim do mês",
-      "exportação de relatórios",
+      "exportações ilimitadas",
     ],
   },
   {

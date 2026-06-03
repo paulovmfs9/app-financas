@@ -47,6 +47,7 @@ export default function ResumoScreen() {
   const chartSlices = buildChartSlices(snapshot.by_category, snapshot.total_spent);
 
   const exportData = useMemo<ExportReportData>(() => ({
+    month: snapshot.month,
     monthLabel,
     generatedAt: new Date(),
     totalSpent: snapshot.total_spent,
@@ -59,7 +60,7 @@ export default function ResumoScreen() {
       percent: slice.percent,
       color: slice.color,
     })),
-  }), [chartSlices, monthLabel, snapshot.media_diaria, snapshot.projecao_mensal, snapshot.saldo_previsto, snapshot.total_spent]);
+  }), [chartSlices, monthLabel, snapshot.media_diaria, snapshot.month, snapshot.projecao_mensal, snapshot.saldo_previsto, snapshot.total_spent]);
 
   const handleExport = async (format: ExportFormat) => {
     setLoadingFormat(format);

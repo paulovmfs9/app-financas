@@ -1,18 +1,46 @@
-import React from "react";
-import { Alert, View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Alert, Linking, View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { useAuth } from "../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
-import { PLAN_DEFINITIONS, normalizePlanKey, type PlanDefinition } from "../src/services/MonetizationService";
+import { PLAN_DEFINITIONS, normalizePlanKey, type PlanDefinition, type PlanKey } from "../src/services/MonetizationService";
+import { initSubscriptionPayment } from "../src/services/PaymentService";
 
 export default function PlansScreen() {
   const { colors } = useTheme();
   const { profile } = useAuth();
   const router = useRouter();
   const currentPlan = normalizePlanKey(profile?.plan);
+  const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+
+  const startSubscription = async (plan: PlanDefinition) => {
+    if (plan.key === "basic") return;
+    if (plan.comingSoon) {
+      Alert.alert("Plano Pro", "As funcionalidades do Plano Pro serão liberadas em breve.");
+      return;
+    }
+
+    setLoadingPlan(plan.key);
+    try {
+      const payment = await initSubscriptionPayment(plan.key, "manual");
+      if (payment.checkoutUrl) {
+        await Linking.openURL(payment.checkoutUrl);
+        Alert.alert("Pagamento iniciado", "Conclua o pagamento no checkout para ativar seu plano.");
+        return;
+      }
+      Alert.alert(
+        "Checkout pendente",
+        "A função de pagamento já foi criada. Configure STANDARD_CHECKOUT_URL e PAYMENT_WEBHOOK_SECRET nas Firebase Functions para ativar o checkout real."
+      );
+    } catch (error: any) {
+      Alert.alert("Erro no pagamento", error?.message || "Não foi possível iniciar a assinatura.");
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
@@ -36,14 +64,8 @@ export default function PlansScreen() {
               plan={plan}
               active={currentPlan === plan.key}
               colors={colors}
-              onPress={() => {
-                if (plan.key === "basic") return;
-                if (plan.comingSoon) {
-                  Alert.alert("Plano Pro", "As funcionalidades do Plano Pro serão liberadas em breve.");
-                  return;
-                }
-                Alert.alert("Assinatura em breve", "Em breve você poderá assinar o Plano Standard dentro do app.");
-              }}
+              loading={loadingPlan === plan.key}
+              onPress={() => startSubscription(plan)}
             />
           ))}
         </View>
@@ -57,13 +79,15 @@ function PlanCard({
   active,
   colors,
   onPress,
+  loading = false,
 }: {
   plan: PlanDefinition;
   active: boolean;
   colors: any;
   onPress: () => void;
+  loading?: boolean;
 }) {
-  const disabled = active || plan.comingSoon || plan.key === "basic";
+  const disabled = active || plan.comingSoon || plan.key === "basic" || loading;
   const buttonLabel = active ? "Plano atual" : plan.comingSoon ? "Em breve" : plan.key === "basic" ? "Incluso" : "Assinar";
 
   return (
@@ -125,7 +149,11 @@ function PlanCard({
           },
         ]}
       >
-        <Text style={[styles.actionText, { color: plan.highlighted && !active ? "#fff" : active ? colors.primary : colors.textPrimary }]}>{buttonLabel}</Text>
+        {loading ? (
+          <ActivityIndicator color={plan.highlighted && !active ? "#fff" : colors.primary} />
+        ) : (
+          <Text style={[styles.actionText, { color: plan.highlighted && !active ? "#fff" : active ? colors.primary : colors.textPrimary }]}>{buttonLabel}</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

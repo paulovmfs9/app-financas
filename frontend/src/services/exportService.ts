@@ -1,6 +1,10 @@
 import { Alert, Platform, Share } from "react-native";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../config/firebase.config";
 
 export type ExportFormat = "pdf" | "png" | "csv" | "xlsx" | "docx";
+
+export const FREE_MONTHLY_EXPORT_LIMIT = 5;
 
 export interface ExportCategoryRow {
   name: string;
@@ -10,6 +14,7 @@ export interface ExportCategoryRow {
 }
 
 export interface ExportReportData {
+  month: string;
   monthLabel: string;
   generatedAt: Date;
   totalSpent: number;
@@ -261,7 +266,22 @@ async function exportPng(data: ExportReportData): Promise<void> {
   });
 }
 
+function assertFormatAvailable(format: ExportFormat): void {
+  if (format === "xlsx" || format === "docx") throw new Error("coming-soon");
+  if ((format === "pdf" || format === "png") && !isWeb()) throw new Error("unsupported");
+}
+
+async function registerExport(format: ExportFormat, month: string): Promise<void> {
+  const callable = httpsCallable<
+    { format: ExportFormat; month: string },
+    { exportCount: number; limit: number | null; unlimited: boolean }
+  >(functions, "registerExport");
+  await callable({ format, month });
+}
+
 export async function exportFinancialReport(format: ExportFormat, data: ExportReportData): Promise<void> {
+  assertFormatAvailable(format);
+  await registerExport(format, data.month);
   if (format === "csv") return exportCsv(data);
   if (format === "pdf") return exportPdf(data);
   if (format === "png") return exportPng(data);
@@ -276,6 +296,10 @@ export function showExportResult(error?: unknown): void {
   const message = error instanceof Error ? error.message : "";
   if (message === "coming-soon" || message === "unsupported") {
     Alert.alert("Formato indisponível", "Este formato ainda não está disponível neste dispositivo.");
+    return;
+  }
+  if (message.includes("resource-exhausted")) {
+    Alert.alert("Limite de exportações atingido", `O Plano Básico permite até ${FREE_MONTHLY_EXPORT_LIMIT} exportações por mês. Assine o Plano Standard para exportações ilimitadas.`);
     return;
   }
   if (message === "popup-blocked") {
