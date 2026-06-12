@@ -27,6 +27,8 @@ export default function PerfilScreen() {
   const [name, setName] = useState(profile?.name ?? "");
   const [salary, setSalary] = useState(String(profile?.monthly_salary ?? 0));
   const [bills, setBills] = useState(String(profile?.fixed_bills_total ?? 0));
+  const [cycleStartDay, setCycleStartDay] = useState(String(profile?.budget_cycle_start_day ?? 1));
+  const [cycleEndDay, setCycleEndDay] = useState(String(profile?.budget_cycle_end_day ?? 31));
   const [saving, setSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
 
@@ -34,11 +36,25 @@ export default function PerfilScreen() {
     setName(profile?.name ?? "");
     setSalary(String(profile?.monthly_salary ?? 0));
     setBills(String(profile?.fixed_bills_total ?? 0));
-  }, [profile?.fixed_bills_total, profile?.monthly_salary, profile?.name]);
+    setCycleStartDay(String(profile?.budget_cycle_start_day ?? 1));
+    setCycleEndDay(String(profile?.budget_cycle_end_day ?? 31));
+  }, [profile?.budget_cycle_end_day, profile?.budget_cycle_start_day, profile?.fixed_bills_total, profile?.monthly_salary, profile?.name]);
 
   const onSave = async () => {
     if (!name.trim()) {
       Alert.alert("Nome obrigatório", "Informe seu nome para atualizar o perfil.");
+      return;
+    }
+
+    const parsedCycleStart = Number.parseInt(cycleStartDay, 10);
+    const parsedCycleEnd = Number.parseInt(cycleEndDay, 10);
+
+    if (!Number.isFinite(parsedCycleStart) || parsedCycleStart < 1 || parsedCycleStart > 31) {
+      Alert.alert("Dia inválido", "Informe um dia inicial entre 1 e 31.");
+      return;
+    }
+    if (!Number.isFinite(parsedCycleEnd) || parsedCycleEnd < 1 || parsedCycleEnd > 31) {
+      Alert.alert("Dia inválido", "Informe um dia final entre 1 e 31.");
       return;
     }
 
@@ -48,6 +64,8 @@ export default function PerfilScreen() {
         name: name.trim(),
         monthly_salary: parseBRL(salary),
         fixed_bills_total: parseBRL(bills),
+        budget_cycle_start_day: parsedCycleStart,
+        budget_cycle_end_day: parsedCycleEnd,
       });
       Alert.alert("Pronto", "Suas informações foram atualizadas.");
     } catch (e: any) {
@@ -112,6 +130,37 @@ export default function PerfilScreen() {
               placeholder="0,00"
               placeholderTextColor={colors.textMuted}
             />
+          </View>
+
+          <View style={{ height: spacing.base }} />
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Ciclo financeiro</Text>
+          <View style={styles.cycleRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.helperLabel, { color: colors.textMuted }]}>Inicia dia</Text>
+              <TextInput
+                testID="perfil-cycle-start-input"
+                style={[styles.textInput, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+                keyboardType="number-pad"
+                maxLength={2}
+                value={cycleStartDay}
+                onChangeText={setCycleStartDay}
+                placeholder="1"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.helperLabel, { color: colors.textMuted }]}>Termina dia</Text>
+              <TextInput
+                testID="perfil-cycle-end-input"
+                style={[styles.textInput, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+                keyboardType="number-pad"
+                maxLength={2}
+                value={cycleEndDay}
+                onChangeText={setCycleEndDay}
+                placeholder="31"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
           </View>
 
           <TouchableOpacity
@@ -214,6 +263,8 @@ const styles = StyleSheet.create({
   textInput: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 16, fontSize: fontSizes.body },
   prefix: { fontSize: fontSizes.body, marginRight: 6, fontWeight: "600" },
   input: { flex: 1, paddingVertical: 16, fontSize: fontSizes.body },
+  cycleRow: { flexDirection: "row", gap: spacing.md },
+  helperLabel: { fontSize: fontSizes.micro, fontWeight: "700", marginBottom: 6 },
   primaryBtn: { marginTop: spacing.base, paddingVertical: 16, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
   themeRow: { flexDirection: "row", gap: spacing.sm },

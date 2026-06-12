@@ -11,7 +11,7 @@ import { ExpenseRepository } from "../repositories/ExpenseRepository";
 import { FixedBillRepository } from "../repositories/FixedBillRepository";
 import { useAuth } from "./AuthProvider";
 import { useTheme } from "./ThemeProvider";
-import { computeSnapshot, monthBounds, monthKey, FinanceSnapshot } from "../utils/finance";
+import { computeSnapshot, cycleBounds, isFixedBillActiveInPeriod, FinanceSnapshot } from "../utils/finance";
 import {
   FREE_MONTHLY_EXPENSE_LIMIT,
   ExpenseLimitError,
@@ -47,13 +47,13 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [fixedBills, setFixedBills] = useState<FixedBill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(() => monthKey());
+  const [currentDay, setCurrentDay] = useState(() => new Date().toDateString());
   const [activeModal, setActiveModal] = useState<MonetizationModal>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentMonth((prev) => {
-        const next = monthKey();
+      setCurrentDay((prev) => {
+        const next = new Date().toDateString();
         return prev === next ? prev : next;
       });
     }, 60_000);
@@ -68,7 +68,11 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setLoading(true);
-    const { start, end } = monthBounds();
+    const { start, end } = cycleBounds(
+      new Date(),
+      profile?.budget_cycle_start_day ?? 1,
+      profile?.budget_cycle_end_day ?? 31
+    );
     const unsub = ExpenseRepository.subscribeMonth(
       firebaseUser.uid,
       start,
@@ -80,7 +84,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
       () => setLoading(false)
     );
     return () => unsub();
-  }, [firebaseUser, currentMonth]);
+  }, [firebaseUser, currentDay, profile?.budget_cycle_end_day, profile?.budget_cycle_start_day]);
 
 
   useEffect(() => {
@@ -103,17 +107,24 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
     ? "Plano Standard ativo - gastos ilimitados"
     : `Plano Básico: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT} gastos`;
 
+  const currentPeriod = useMemo(
+    () => cycleBounds(new Date(), profile?.budget_cycle_start_day ?? 1, profile?.budget_cycle_end_day ?? 31),
+    [currentDay, profile?.budget_cycle_end_day, profile?.budget_cycle_start_day]
+  );
   const recurringFixedBillsTotal = useMemo(
-    () => fixedBills.filter((bill) => bill.is_active).reduce((sum, bill) => sum + bill.amount, 0),
-    [fixedBills]
+    () =>
+      fixedBills
+        .filter((bill) => isFixedBillActiveInPeriod(bill, currentPeriod.start, currentPeriod.end))
+        .reduce((sum, bill) => sum + bill.amount, 0),
+    [currentPeriod.end, currentPeriod.start, fixedBills]
   );
   const legacyFixedBillsTotal = profile?.fixed_bills_total ?? 0;
   const fixedBillsTotal = fixedBills.length > 0 ? recurringFixedBillsTotal : legacyFixedBillsTotal;
 
   const snapshot = useMemo<FinanceSnapshot>(() => {
     const salary = profile?.monthly_salary ?? 0;
-    return computeSnapshot(salary, fixedBillsTotal, expenses);
-  }, [expenses, fixedBillsTotal, profile?.monthly_salary]);
+    return computeSnapshot(salary, fixedBillsTotal, expenses, new Date(), currentPeriod);
+  }, [currentPeriod, expenses, fixedBillsTotal, profile?.monthly_salary]);
 
   const openUpgradeModal = useCallback(() => {
     showUpgradeModal(() => setActiveModal("upgrade"));

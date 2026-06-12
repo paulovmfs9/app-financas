@@ -44,11 +44,12 @@ export default function ResumoScreen() {
   const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null);
   const now = new Date();
   const monthLabel = `${MONTHS_PT[now.getMonth()]} de ${now.getFullYear()}`;
+  const periodLabel = formatPeriodLabel(snapshot.period_start, snapshot.period_end);
   const chartSlices = buildChartSlices(snapshot.by_category, snapshot.total_spent);
 
   const exportData = useMemo<ExportReportData>(() => ({
     month: snapshot.month,
-    monthLabel,
+    monthLabel: periodLabel,
     generatedAt: new Date(),
     totalSpent: snapshot.total_spent,
     mediaDiaria: snapshot.media_diaria,
@@ -60,7 +61,7 @@ export default function ResumoScreen() {
       percent: slice.percent,
       color: slice.color,
     })),
-  }), [chartSlices, monthLabel, snapshot.media_diaria, snapshot.month, snapshot.projecao_mensal, snapshot.saldo_previsto, snapshot.total_spent]);
+  }), [chartSlices, periodLabel, snapshot.media_diaria, snapshot.month, snapshot.projecao_mensal, snapshot.saldo_previsto, snapshot.total_spent]);
 
   const handleExport = async (format: ExportFormat) => {
     setLoadingFormat(format);
@@ -93,7 +94,7 @@ export default function ResumoScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={[styles.overline, { color: colors.textMuted }]}>RESUMO</Text>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{monthLabel}</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Visão completa das suas finanças deste mês.</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Ciclo de {periodLabel}.</Text>
 
         <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: hasUnlimitedExpenses ? colors.primary : colors.border }]}> 
           <Text style={[styles.planIndicatorText, { color: hasUnlimitedExpenses ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
@@ -190,6 +191,13 @@ export default function ResumoScreen() {
       />
     </SafeAreaView>
   );
+}
+
+function formatPeriodLabel(startMs: number, endMs: number): string {
+  const options: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit" };
+  const start = new Date(startMs).toLocaleDateString("pt-BR", options);
+  const end = new Date(endMs).toLocaleDateString("pt-BR", { ...options, year: "numeric" });
+  return `${start} a ${end}`;
 }
 
 function buildChartSlices(byCategory: Record<string, number>, totalSpent: number): ChartSlice[] {

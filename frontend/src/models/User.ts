@@ -11,6 +11,8 @@ export interface User {
   name: string;
   monthly_salary: number;
   fixed_bills_total: number;
+  budget_cycle_start_day: number;
+  budget_cycle_end_day: number;
   theme: ThemePref;
   onboarded: boolean;
   created_at: number; // epoch ms
@@ -36,6 +38,8 @@ export const subscriptionDefaults = () => ({
 export const normalizeUser = (user: Partial<User> & Pick<User, "uid" | "email" | "name">): User => ({
   monthly_salary: 0,
   fixed_bills_total: 0,
+  budget_cycle_start_day: 1,
+  budget_cycle_end_day: 31,
   theme: "system",
   onboarded: false,
   created_at: Date.now(),

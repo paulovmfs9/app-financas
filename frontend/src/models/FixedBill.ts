@@ -5,6 +5,9 @@ export interface FixedBill {
   amount: number;
   due_day: number;
   is_active: boolean;
+  installment_count?: number;
+  installment_start_date?: number;
+  installment_end_date?: number;
   created_at: number;
   updated_at: number;
 }

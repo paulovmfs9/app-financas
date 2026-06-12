@@ -50,6 +50,8 @@ interface UserProfile {
   subscriptionStatus?: unknown;
   subscriptionProvider?: unknown;
   subscriptionExpiresAt?: unknown;
+  budget_cycle_start_day?: unknown;
+  budget_cycle_end_day?: unknown;
 }
 
 function validateExpensePayload(data: AddExpensePayload) {
@@ -148,11 +150,42 @@ function monthKey(dateMs: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function monthBounds(dateMs: number): { start: number; end: number } {
+function cycleBounds(dateMs: number, profile: UserProfile): { start: number; end: number } {
   const date = new Date(dateMs);
-  const start = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0).getTime();
-  const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-  return { start, end };
+  const startDay = profileDay(profile.budget_cycle_start_day, 1);
+  const endDay = profileDay(profile.budget_cycle_end_day, 31);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  if (startDay <= endDay) {
+    return {
+      start: dateAtDay(year, month, startDay, false).getTime(),
+      end: dateAtDay(year, month, endDay, true).getTime(),
+    };
+  }
+
+  const startMonth = date.getDate() >= startDay ? month : month - 1;
+  const endMonth = date.getDate() >= startDay ? month + 1 : month;
+  return {
+    start: dateAtDay(year, startMonth, startDay, false).getTime(),
+    end: dateAtDay(year, endMonth, endDay, true).getTime(),
+  };
+}
+
+function cycleKey(bounds: { start: number }): string {
+  const date = new Date(bounds.start);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function profileDay(value: unknown, fallback: number): number {
+  const day = typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : fallback;
+  return Math.min(31, Math.max(1, day));
+}
+
+function dateAtDay(year: number, month: number, day: number, endOfDay: boolean): Date {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const safeDay = Math.min(day, lastDay);
+  return new Date(year, month, safeDay, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0);
 }
 
 function assertWebhookSecret(request: Parameters<Parameters<typeof onRequest>[0]>[0]) {
@@ -184,7 +217,6 @@ export const addExpense = onCall(async (request) => {
 
   const expense = validateExpensePayload((request.data ?? {}) as AddExpensePayload);
   const userRef = db.doc(`users/${uid}`);
-  const usageRef = userRef.collection("usage").doc(monthKey(expense.date));
   const expenseRef = userRef.collection("expenses").doc();
   const now = Date.now();
 
@@ -196,13 +228,14 @@ export const addExpense = onCall(async (request) => {
 
     const profile = userSnap.data() as UserProfile;
     const unlimited = hasUnlimitedUsage(profile);
+    const cycle = cycleBounds(expense.date, profile);
+    const usageRef = userRef.collection("usage").doc(cycleKey(cycle));
     const usageSnap = await transaction.get(usageRef);
     let currentCount = Number(usageSnap.get("expenseCount") ?? 0);
 
     if (!usageSnap.exists) {
-      const { start, end } = monthBounds(expense.date);
       const existingExpenses = await transaction.get(
-        userRef.collection("expenses").where("date", ">=", start).where("date", "<=", end)
+        userRef.collection("expenses").where("date", ">=", cycle.start).where("date", "<=", cycle.end)
       );
       currentCount = existingExpenses.size;
     }
@@ -224,6 +257,8 @@ export const addExpense = onCall(async (request) => {
       usageRef,
       {
         expenseCount: currentCount + 1,
+        periodStart: cycle.start,
+        periodEnd: cycle.end,
         updatedAt: now,
       },
       { merge: true }
@@ -244,6 +279,11 @@ export const deleteExpense = onCall(async (request) => {
   const expenseRef = userRef.collection("expenses").doc(expenseId);
 
   await db.runTransaction(async (transaction) => {
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists) {
+      throw new HttpsError("failed-precondition", "Perfil não encontrado.");
+    }
+
     const expenseSnap = await transaction.get(expenseRef);
     if (!expenseSnap.exists) {
       throw new HttpsError("not-found", "Gasto não encontrado.");
@@ -255,15 +295,25 @@ export const deleteExpense = onCall(async (request) => {
     }
 
     const dateMs = typeof data.date === "number" ? data.date : Date.now();
-    const usageRef = userRef.collection("usage").doc(monthKey(dateMs));
+    const cycle = cycleBounds(dateMs, userSnap.data() as UserProfile);
+    const usageRef = userRef.collection("usage").doc(cycleKey(cycle));
     const usageSnap = await transaction.get(usageRef);
-    const currentCount = Number(usageSnap.get("expenseCount") ?? 0);
+    let currentCount = Number(usageSnap.get("expenseCount") ?? 0);
+
+    if (!usageSnap.exists) {
+      const existingExpenses = await transaction.get(
+        userRef.collection("expenses").where("date", ">=", cycle.start).where("date", "<=", cycle.end)
+      );
+      currentCount = existingExpenses.size;
+    }
 
     transaction.delete(expenseRef);
     transaction.set(
       usageRef,
       {
         expenseCount: Math.max(0, currentCount - 1),
+        periodStart: cycle.start,
+        periodEnd: cycle.end,
         updatedAt: Date.now(),
       },
       { merge: true }

@@ -17,19 +17,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { useExpenses } from "../src/providers/ExpensesProvider";
 import { formatBRL, parseBRL } from "../src/utils/format";
+import { installmentEndDate, isFixedBillActiveInPeriod } from "../src/utils/finance";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
 
 export default function FixedBillsScreen() {
   const { colors } = useTheme();
-  const { fixedBills, fixedBillsTotal, addFixedBill, deleteFixedBill } = useExpenses();
+  const { fixedBills, fixedBillsTotal, addFixedBill, deleteFixedBill, snapshot } = useExpenses();
   const router = useRouter();
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("1");
+  const [billMode, setBillMode] = useState<"monthly" | "installment">("monthly");
+  const [installments, setInstallments] = useState("2");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const activeBills = fixedBills.filter((bill) => bill.is_active);
+  const activeBills = fixedBills.filter((bill) => isFixedBillActiveInPeriod(bill, snapshot.period_start, snapshot.period_end));
 
   const onSave = async () => {
     const cleanName = name.trim();
@@ -49,17 +52,33 @@ export default function FixedBillsScreen() {
       return;
     }
 
+    const parsedInstallments = Number.parseInt(installments, 10);
+    if (billMode === "installment" && (!Number.isFinite(parsedInstallments) || parsedInstallments < 1 || parsedInstallments > 120)) {
+      Alert.alert("Parcelas inválidas", "Informe uma quantidade entre 1 e 120 parcelas.");
+      return;
+    }
+
     setSaving(true);
     try {
+      const installmentStartDate = new Date().getTime();
       await addFixedBill({
         name: cleanName,
         amount: value,
         due_day: parsedDueDay,
         is_active: true,
+        ...(billMode === "installment"
+          ? {
+              installment_count: parsedInstallments,
+              installment_start_date: installmentStartDate,
+              installment_end_date: installmentEndDate(installmentStartDate, parsedInstallments),
+            }
+          : {}),
       });
       setName("");
       setAmount("");
       setDueDay("1");
+      setBillMode("monthly");
+      setInstallments("2");
     } catch (err: any) {
       Alert.alert("Erro", err?.message || "Não foi possível salvar a conta fixa.");
     } finally {
@@ -97,6 +116,23 @@ export default function FixedBillsScreen() {
           </View>
 
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Adicionar conta</Text>
+          <View style={styles.modeRow}>
+            {(["monthly", "installment"] as const).map((mode) => {
+              const active = billMode === mode;
+              return (
+                <TouchableOpacity
+                  key={mode}
+                  testID={`fixed-bill-mode-${mode}`}
+                  activeOpacity={0.8}
+                  onPress={() => setBillMode(mode)}
+                  style={[styles.modeButton, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
+                >
+                  <Text style={[styles.modeButtonText, { color: active ? "#fff" : colors.textPrimary }]}>{mode === "monthly" ? "Mensal" : "Parcelada"}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
           <TextInput
             testID="fixed-bill-name-input"
@@ -136,6 +172,20 @@ export default function FixedBillsScreen() {
             </View>
           </View>
 
+          {billMode === "installment" ? (
+            <View style={styles.installmentsWrap}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Quantidade de parcelas</Text>
+              <TextInput
+                testID="fixed-bill-installments-input"
+                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+                keyboardType="number-pad"
+                maxLength={3}
+                value={installments}
+                onChangeText={setInstallments}
+              />
+            </View>
+          ) : null}
+
           <TouchableOpacity
             testID="fixed-bill-save-button"
             activeOpacity={0.85}
@@ -143,7 +193,7 @@ export default function FixedBillsScreen() {
             onPress={onSave}
             style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Salvar conta fixa</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{billMode === "installment" ? "Salvar compra parcelada" : "Salvar conta fixa"}</Text>}
           </TouchableOpacity>
 
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Cadastradas</Text>
@@ -159,7 +209,7 @@ export default function FixedBillsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.billName, { color: colors.textPrimary }]} numberOfLines={1}>{bill.name}</Text>
-                  <Text style={[styles.billSub, { color: colors.textMuted }]}>Todo mês no dia {bill.due_day}</Text>
+                  <Text style={[styles.billSub, { color: colors.textMuted }]}>{bill.installment_count ? `${bill.installment_count}x até ${formatShortDate(bill.installment_end_date)} - dia ${bill.due_day}` : `Todo mês no dia ${bill.due_day}`}</Text>
                 </View>
                 <Text style={[styles.billAmount, { color: colors.textPrimary }]}>{formatBRL(bill.amount)}</Text>
                 <TouchableOpacity
@@ -180,6 +230,11 @@ export default function FixedBillsScreen() {
   );
 }
 
+function formatShortDate(dateMs?: number): string {
+  if (!dateMs) return "sem data";
+  return new Date(dateMs).toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" });
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { height: 56, paddingHorizontal: spacing.base, borderBottomWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
@@ -191,6 +246,9 @@ const styles = StyleSheet.create({
   summaryValue: { fontSize: 36, fontWeight: "900", marginTop: 4 },
   summarySub: { fontSize: fontSizes.small, marginTop: 4 },
   sectionTitle: { fontSize: fontSizes.h3, fontWeight: "800", marginBottom: spacing.base, marginTop: spacing.lg },
+  modeRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.base },
+  modeButton: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: 12, alignItems: "center" },
+  modeButtonText: { fontSize: fontSizes.small, fontWeight: "800" },
   label: { fontSize: fontSizes.small, fontWeight: "700", marginBottom: 8 },
   input: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 14, fontSize: fontSizes.body },
   formRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.base },
@@ -198,6 +256,7 @@ const styles = StyleSheet.create({
   moneyInput: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base },
   prefix: { fontSize: fontSizes.body, marginRight: 6, fontWeight: "700" },
   moneyField: { flex: 1, paddingVertical: 14, fontSize: fontSizes.body },
+  installmentsWrap: { marginTop: spacing.base },
   primaryBtn: { marginTop: spacing.base, paddingVertical: 16, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "800" },
   emptyBox: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.lg, alignItems: "center" },

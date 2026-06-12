@@ -41,6 +41,8 @@ service cloud.firestore {
         'name',
         'monthly_salary',
         'fixed_bills_total',
+        'budget_cycle_start_day',
+        'budget_cycle_end_day',
         'theme',
         'onboarded',
         'created_at',
@@ -58,6 +60,8 @@ service cloud.firestore {
         'name',
         'monthly_salary',
         'fixed_bills_total',
+        'budget_cycle_start_day',
+        'budget_cycle_end_day',
         'theme',
         'onboarded',
         'created_at',
@@ -74,6 +78,12 @@ service cloud.firestore {
       && request.resource.data.name is string
       && request.resource.data.monthly_salary is number
       && request.resource.data.fixed_bills_total is number
+      && request.resource.data.budget_cycle_start_day is number
+      && request.resource.data.budget_cycle_start_day >= 1
+      && request.resource.data.budget_cycle_start_day <= 31
+      && request.resource.data.budget_cycle_end_day is number
+      && request.resource.data.budget_cycle_end_day >= 1
+      && request.resource.data.budget_cycle_end_day <= 31
       && request.resource.data.theme in ['light', 'dark', 'system']
       && request.resource.data.onboarded is bool
       && request.resource.data.created_at is number
@@ -87,6 +97,9 @@ service cloud.firestore {
         'amount',
         'due_day',
         'is_active',
+        'installment_count',
+        'installment_start_date',
+        'installment_end_date',
         'created_at',
         'updated_at'
       ])
@@ -107,6 +120,9 @@ service cloud.firestore {
       && request.resource.data.due_day >= 1
       && request.resource.data.due_day <= 31
       && request.resource.data.is_active is bool
+      && (!request.resource.data.keys().hasAny(['installment_count']) || (request.resource.data.installment_count is number && request.resource.data.installment_count >= 1 && request.resource.data.installment_count <= 120))
+      && (!request.resource.data.keys().hasAny(['installment_start_date']) || request.resource.data.installment_start_date is number)
+      && (!request.resource.data.keys().hasAny(['installment_end_date']) || request.resource.data.installment_end_date is number)
       && request.resource.data.created_at is number
       && request.resource.data.updated_at is number;
     }
