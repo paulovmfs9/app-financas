@@ -9,6 +9,7 @@ import { useExpenses } from "../../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL, formatBRLCompact, parseBRL } from "../../src/utils/format";
 import { categoryById } from "../../src/models/Category";
+import { installmentEndDate } from "../../src/utils/finance";
 
 const MONTHS_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -25,6 +26,8 @@ export default function HomeScreen() {
   const [fixedBillName, setFixedBillName] = useState("");
   const [fixedBillAmount, setFixedBillAmount] = useState("");
   const [fixedBillDueDay, setFixedBillDueDay] = useState("1");
+  const [fixedBillKind, setFixedBillKind] = useState<"recurring" | "installment">("recurring");
+  const [fixedBillInstallments, setFixedBillInstallments] = useState("2");
   const [savingFixedBill, setSavingFixedBill] = useState(false);
   const [deletingFixedBillId, setDeletingFixedBillId] = useState<string | null>(null);
   const router = useRouter();
@@ -68,6 +71,7 @@ export default function HomeScreen() {
     const name = fixedBillName.trim();
     const amount = parseBRL(fixedBillAmount);
     const dueDay = Number.parseInt(fixedBillDueDay, 10);
+    const installmentCount = Number.parseInt(fixedBillInstallments, 10);
 
     if (!name) {
       Alert.alert("Nome obrigatório", "Informe o nome da conta fixa.");
@@ -81,13 +85,36 @@ export default function HomeScreen() {
       Alert.alert("Vencimento inválido", "Informe um dia entre 1 e 31.");
       return;
     }
+    if (fixedBillKind === "installment" && (!Number.isFinite(installmentCount) || installmentCount < 2 || installmentCount > 120)) {
+      Alert.alert("Parcelas inválidas", "Informe entre 2 e 120 meses.");
+      return;
+    }
 
     setSavingFixedBill(true);
     try {
-      await addFixedBill({ name, amount, due_day: dueDay, is_active: true });
+      const installmentStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        Math.min(dueDay, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate())
+      ).getTime();
+      await addFixedBill({
+        name,
+        amount,
+        due_day: dueDay,
+        is_active: true,
+        ...(fixedBillKind === "installment"
+          ? {
+              installment_count: installmentCount,
+              installment_start_date: installmentStart,
+              installment_end_date: installmentEndDate(installmentStart, installmentCount),
+            }
+          : {}),
+      });
       setFixedBillName("");
       setFixedBillAmount("");
       setFixedBillDueDay("1");
+      setFixedBillKind("recurring");
+      setFixedBillInstallments("2");
     } catch {
       Alert.alert("Erro", "Não foi possível salvar a conta fixa.");
     } finally {
@@ -186,7 +213,30 @@ export default function HomeScreen() {
         {showFixedBills ? (
           <View testID="home-fixed-bills-panel" style={[styles.fixedBillsPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
             <Text style={[styles.fixedBillsPanelTitle, { color: colors.textPrimary }]}>Adicionar conta fixa</Text>
-            <Text style={[styles.fixedBillsPanelHint, { color: colors.textSecondary }]}>Esse valor entra automaticamente no cálculo de todo novo mês.</Text>
+            <Text style={[styles.fixedBillsPanelHint, { color: colors.textSecondary }]}>Use mensal fixa para contas contínuas ou compra parcelada para debitar por alguns meses.</Text>
+
+            <View style={styles.fixedBillsModeRow}>
+              {([
+                ["recurring", "Mensal fixa"],
+                ["installment", "Compra parcelada"],
+              ] as const).map(([key, label]) => {
+                const active = fixedBillKind === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    testID={"home-fixed-bill-mode-" + key}
+                    activeOpacity={0.8}
+                    onPress={() => setFixedBillKind(key)}
+                    style={[
+                      styles.fixedBillsModeButton,
+                      { backgroundColor: active ? colors.primary : colors.background, borderColor: active ? colors.primary : colors.border },
+                    ]}
+                  >
+                    <Text style={[styles.fixedBillsModeText, { color: active ? "#fff" : colors.textPrimary }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             <Text style={[styles.fixedBillsLabel, { color: colors.textSecondary }]}>Nome da conta</Text>
             <TextInput
@@ -226,6 +276,22 @@ export default function HomeScreen() {
                 />
               </View>
             </View>
+            {fixedBillKind === "installment" ? (
+              <View>
+                <Text style={[styles.fixedBillsLabel, { color: colors.textSecondary }]}>Quantidade de meses</Text>
+                <TextInput
+                  testID="home-fixed-bill-installments-input"
+                  style={[styles.fixedBillsInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.textPrimary }]}
+                  placeholder="Ex: 10"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  value={fixedBillInstallments}
+                  onChangeText={setFixedBillInstallments}
+                />
+                <Text style={[styles.fixedBillsHelper, { color: colors.textMuted }]}>O valor será debitado uma vez por mês até a última parcela.</Text>
+              </View>
+            ) : null}
             <TouchableOpacity
               testID="home-fixed-bill-save-button"
               activeOpacity={0.85}
@@ -242,7 +308,10 @@ export default function HomeScreen() {
                   <View key={bill.id} style={[styles.fixedBillItem, { borderTopColor: colors.border }]}> 
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.fixedBillItemName, { color: colors.textPrimary }]} numberOfLines={1}>{bill.name}</Text>
-                      <Text style={[styles.fixedBillItemSub, { color: colors.textMuted }]}>Dia {bill.due_day} • {formatBRL(bill.amount)}</Text>
+                      <Text style={[styles.fixedBillItemSub, { color: colors.textMuted }]}>
+                        Dia {bill.due_day} • {formatBRL(bill.amount)}
+                        {bill.installment_count ? " • " + bill.installment_count + "x ate " + new Date(bill.installment_end_date ?? 0).toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" }) : ""}
+                      </Text>
                     </View>
                     <TouchableOpacity
                       testID={`home-fixed-bill-delete-${bill.id}`}
@@ -411,6 +480,9 @@ const styles = StyleSheet.create({
   fixedBillsLabel: { fontSize: fontSizes.micro, fontWeight: "800", marginBottom: 6 },
   fixedBillsHelper: { fontSize: 11, lineHeight: 16, marginTop: -4, marginBottom: spacing.base },
   fixedBillsInput: { borderWidth: 1, borderRadius: radii.md, paddingHorizontal: spacing.base, paddingVertical: 12, fontSize: fontSizes.body, marginBottom: spacing.sm },
+  fixedBillsModeRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.base },
+  fixedBillsModeButton: { flex: 1, borderWidth: 1, borderRadius: radii.md, paddingVertical: 11, paddingHorizontal: spacing.sm, alignItems: "center" },
+  fixedBillsModeText: { fontSize: fontSizes.small, fontWeight: "800" },
   fixedBillsFormRow: { flexDirection: "row", gap: spacing.sm },
   fixedBillsDayWrap: { width: 104 },
   fixedBillsDayInput: { textAlign: "center" },
