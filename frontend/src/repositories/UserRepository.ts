@@ -53,7 +53,11 @@ export const UserRepository = {
       const data = snap.data() as User;
       const user = normalizeUser(data);
       if (missingDefaultFields(data)) {
-        await setDoc(ref, defaultBackfill(data), { merge: true });
+        try {
+          await setDoc(ref, defaultBackfill(data), { merge: true });
+        } catch (err) {
+          console.warn("[UserRepository] failed to backfill profile defaults:", err);
+        }
       }
       return user;
     }
