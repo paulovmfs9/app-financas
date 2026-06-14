@@ -1,4 +1,14 @@
 // metro.config.js
+if (!Array.prototype.toReversed) {
+  Object.defineProperty(Array.prototype, 'toReversed', {
+    value: function toReversed() {
+      return Array.prototype.slice.call(this).reverse();
+    },
+    writable: true,
+    configurable: true,
+  });
+}
+
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require('path');
 const { FileStore } = require('metro-cache');
