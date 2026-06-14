@@ -157,7 +157,7 @@ function cycleBounds(dateMs: number, profile: UserProfile): { start: number; end
   const year = date.getFullYear();
   const month = date.getMonth();
 
-  if (startDay <= endDay) {
+  if (startDay < endDay) {
     return {
       start: dateAtDay(year, month, startDay, false).getTime(),
       end: dateAtDay(year, month, endDay, true).getTime(),

@@ -51,7 +51,7 @@ export function cycleBounds(
   const y = now.getFullYear();
   const m = now.getMonth();
 
-  if (start <= end) {
+  if (start < end) {
     return buildPeriod(dateAtDay(y, m, start, false), dateAtDay(y, m, end, true));
   }
 

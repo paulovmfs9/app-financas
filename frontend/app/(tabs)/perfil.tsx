@@ -134,6 +134,7 @@ export default function PerfilScreen() {
 
           <View style={{ height: spacing.base }} />
           <Text style={[styles.label, { color: colors.textSecondary }]}>Ciclo financeiro</Text>
+          <Text style={[styles.cycleHint, { color: colors.textMuted }]}>Use o mesmo dia no início e no fim para fechar no mês seguinte. Ex: 15 a 15.</Text>
           <View style={styles.cycleRow}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.helperLabel, { color: colors.textMuted }]}>Inicia dia</Text>
@@ -264,6 +265,7 @@ const styles = StyleSheet.create({
   prefix: { fontSize: fontSizes.body, marginRight: 6, fontWeight: "600" },
   input: { flex: 1, paddingVertical: 16, fontSize: fontSizes.body },
   cycleRow: { flexDirection: "row", gap: spacing.md },
+  cycleHint: { fontSize: fontSizes.micro, lineHeight: 16, marginTop: -4, marginBottom: spacing.sm },
   helperLabel: { fontSize: fontSizes.micro, fontWeight: "700", marginBottom: 6 },
   primaryBtn: { marginTop: spacing.base, paddingVertical: 16, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
   primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
