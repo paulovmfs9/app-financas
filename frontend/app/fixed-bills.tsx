@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -35,6 +36,9 @@ export default function FixedBillsScreen() {
   const activeBills = fixedBills.filter((bill) => isFixedBillActiveInPeriod(bill, snapshot.period_start, snapshot.period_end));
 
   const onSave = async () => {
+    if (saving) return;
+    Keyboard.dismiss();
+
     const cleanName = name.trim();
     const value = parseBRL(amount);
     const parsedDueDay = Number.parseInt(dueDay, 10);

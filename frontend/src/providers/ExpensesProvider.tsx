@@ -176,13 +176,9 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const addFixedBill = useCallback(
     async (input: FixedBillInput) => {
       if (!firebaseUser) throw new Error("Não autenticado");
-      try {
-        await FixedBillRepository.create(firebaseUser.uid, input);
-      } catch {
-        await updateProfile({ fixed_bills_total: fixedBillsTotal + input.amount });
-      }
+      await FixedBillRepository.create(firebaseUser.uid, input);
     },
-    [firebaseUser, fixedBillsTotal, updateProfile]
+    [firebaseUser]
   );
 
   const deleteFixedBill = useCallback(

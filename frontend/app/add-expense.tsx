@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,6 +41,9 @@ export default function AddExpenseScreen() {
   }, [description, autoMode]);
 
   const onSave = async () => {
+    if (saving) return;
+    Keyboard.dismiss();
+
     const value = parseBRL(amount);
     if (value <= 0) {
       Alert.alert("Valor inválido", "Digite um valor maior que zero.");
