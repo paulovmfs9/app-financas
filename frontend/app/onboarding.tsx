@@ -15,6 +15,7 @@ import { useTheme } from "../src/providers/ThemeProvider";
 import { useAuth } from "../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
 import { parseBRL } from "../src/utils/format";
+import { friendlyFirebaseError } from "../src/utils/errors";
 
 export default function OnboardingScreen() {
   const { colors } = useTheme();
@@ -36,7 +37,7 @@ export default function OnboardingScreen() {
     try {
       await updateProfile({ monthly_salary: s, fixed_bills_total: b, onboarded: true });
     } catch (e: any) {
-      setError(e?.message || "Não foi possível salvar.");
+      setError(friendlyFirebaseError(e, "Não foi possível salvar seu perfil."));
     } finally {
       setLoading(false);
     }

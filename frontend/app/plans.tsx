@@ -8,6 +8,7 @@ import { useAuth } from "../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
 import { PLAN_DEFINITIONS, normalizePlanKey, type PlanDefinition, type PlanKey } from "../src/services/MonetizationService";
 import { initSubscriptionPayment } from "../src/services/PaymentService";
+import { friendlyFirebaseError } from "../src/utils/errors";
 
 export default function PlansScreen() {
   const { colors } = useTheme();
@@ -36,7 +37,7 @@ export default function PlansScreen() {
         "A função de pagamento já foi criada. Configure STANDARD_CHECKOUT_URL e PAYMENT_WEBHOOK_SECRET nas Firebase Functions para ativar o checkout real."
       );
     } catch (error: any) {
-      Alert.alert("Erro no pagamento", error?.message || "Não foi possível iniciar a assinatura.");
+      Alert.alert("Erro no pagamento", friendlyFirebaseError(error, "Não foi possível iniciar a assinatura."));
     } finally {
       setLoadingPlan(null);
     }

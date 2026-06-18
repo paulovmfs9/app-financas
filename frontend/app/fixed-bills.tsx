@@ -20,6 +20,7 @@ import { useExpenses } from "../src/providers/ExpensesProvider";
 import { formatBRL, parseBRL } from "../src/utils/format";
 import { installmentEndDate, isFixedBillActiveInPeriod } from "../src/utils/finance";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
+import { friendlyFirebaseError } from "../src/utils/errors";
 
 export default function FixedBillsScreen() {
   const { colors } = useTheme();
@@ -84,7 +85,7 @@ export default function FixedBillsScreen() {
       setBillMode("monthly");
       setInstallments("2");
     } catch (err: any) {
-      Alert.alert("Erro", err?.message || "Não foi possível salvar a conta fixa.");
+      Alert.alert("Erro", friendlyFirebaseError(err, "Não foi possível salvar a conta fixa."));
     } finally {
       setSaving(false);
     }
@@ -95,7 +96,7 @@ export default function FixedBillsScreen() {
     try {
       await deleteFixedBill(id);
     } catch (err: any) {
-      Alert.alert("Erro", err?.message || "Não foi possível remover a conta fixa.");
+      Alert.alert("Erro", friendlyFirebaseError(err, "Não foi possível remover a conta fixa."));
     } finally {
       setDeletingId(null);
     }

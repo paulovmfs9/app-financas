@@ -1,6 +1,7 @@
 import { Alert, Platform, Share } from "react-native";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../config/firebase.config";
+import { friendlyFirebaseError } from "../utils/errors";
 
 export type ExportFormat = "pdf" | "png" | "csv" | "xlsx" | "docx";
 
@@ -306,5 +307,5 @@ export function showExportResult(error?: unknown): void {
     Alert.alert("Permissão necessária", "Autorize pop-ups no navegador para gerar o PDF.");
     return;
   }
-  Alert.alert("Não foi possível exportar", "Tente novamente em instantes.");
+  Alert.alert("Não foi possível exportar", friendlyFirebaseError(error, "Tente novamente em instantes."));
 }

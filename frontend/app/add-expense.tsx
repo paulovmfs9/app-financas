@@ -19,6 +19,7 @@ import { useTheme } from "../src/providers/ThemeProvider";
 import { useExpenses } from "../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
 import { parseBRL } from "../src/utils/format";
+import { friendlyFirebaseError } from "../src/utils/errors";
 import { CATEGORIES, suggestCategory } from "../src/models/Category";
 import { isExpenseLimitError } from "../src/services/MonetizationService";
 
@@ -60,7 +61,7 @@ export default function AddExpenseScreen() {
       router.back();
     } catch (e: any) {
       if (!isExpenseLimitError(e)) {
-        Alert.alert("Erro", e?.message || "Não foi possível salvar.");
+        Alert.alert("Erro", friendlyFirebaseError(e, "Não foi possível salvar o gasto."));
       }
     } finally {
       setSaving(false);

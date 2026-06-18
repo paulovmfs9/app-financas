@@ -18,6 +18,7 @@ import { useTheme } from "../../src/providers/ThemeProvider";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { parseBRL } from "../../src/utils/format";
+import { friendlyFirebaseError } from "../../src/utils/errors";
 
 export default function PerfilScreen() {
   const { colors, pref, setPref } = useTheme();
@@ -69,7 +70,7 @@ export default function PerfilScreen() {
       });
       Alert.alert("Pronto", "Suas informações foram atualizadas.");
     } catch (e: any) {
-      Alert.alert("Erro", e?.message || "Não foi possível salvar.");
+      Alert.alert("Erro", friendlyFirebaseError(e, "Não foi possível salvar seu perfil."));
     } finally {
       setSaving(false);
     }

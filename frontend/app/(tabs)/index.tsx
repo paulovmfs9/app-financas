@@ -10,6 +10,7 @@ import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL, formatBRLCompact, parseBRL } from "../../src/utils/format";
 import { categoryById } from "../../src/models/Category";
 import { installmentEndDate } from "../../src/utils/finance";
+import { friendlyFirebaseError } from "../../src/utils/errors";
 
 const MONTHS_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -60,8 +61,8 @@ export default function HomeScreen() {
       setDeletingId(id);
       await deleteExpense(id);
       setConfirmDeleteId(null);
-    } catch {
-      Alert.alert("Erro", "Não foi possível remover o gasto. Tente novamente.");
+    } catch (err) {
+      Alert.alert("Erro", friendlyFirebaseError(err, "Não foi possível remover o gasto. Tente novamente."));
     } finally {
       setDeletingId(null);
     }
@@ -88,8 +89,8 @@ export default function HomeScreen() {
       Alert.alert("Vencimento inválido", "Informe um dia entre 1 e 31.");
       return;
     }
-    if (fixedBillKind === "installment" && (!Number.isFinite(installmentCount) || installmentCount < 2 || installmentCount > 120)) {
-      Alert.alert("Parcelas inválidas", "Informe entre 2 e 120 meses.");
+    if (fixedBillKind === "installment" && (!Number.isFinite(installmentCount) || installmentCount < 1 || installmentCount > 120)) {
+      Alert.alert("Parcelas inválidas", "Informe entre 1 e 120 meses.");
       return;
     }
 
@@ -118,8 +119,8 @@ export default function HomeScreen() {
       setFixedBillDueDay("1");
       setFixedBillKind("recurring");
       setFixedBillInstallments("2");
-    } catch {
-      Alert.alert("Erro", "Não foi possível salvar a conta fixa.");
+    } catch (err) {
+      Alert.alert("Erro", friendlyFirebaseError(err, "Não foi possível salvar a conta fixa."));
     } finally {
       setSavingFixedBill(false);
     }
@@ -129,8 +130,8 @@ export default function HomeScreen() {
     setDeletingFixedBillId(id);
     try {
       await deleteFixedBill(id);
-    } catch {
-      Alert.alert("Erro", "Não foi possível remover a conta fixa.");
+    } catch (err) {
+      Alert.alert("Erro", friendlyFirebaseError(err, "Não foi possível remover a conta fixa."));
     } finally {
       setDeletingFixedBillId(null);
     }
