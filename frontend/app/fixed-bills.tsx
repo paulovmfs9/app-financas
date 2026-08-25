@@ -202,12 +202,12 @@ export default function FixedBillsScreen() {
           </TouchableOpacity>
 
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Cadastradas</Text>
-          {fixedBills.length === 0 ? (
+          {activeBills.length === 0 ? (
             <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-              <Text style={{ color: colors.textSecondary, textAlign: "center" }}>Nenhuma conta fixa cadastrada ainda.</Text>
+              <Text style={{ color: colors.textSecondary, textAlign: "center" }}>Nenhuma conta fixa ativa para este período.</Text>
             </View>
           ) : (
-            fixedBills.map((bill) => (
+            activeBills.map((bill) => (
               <View key={bill.id} style={[styles.billRow, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
                 <View style={[styles.billIcon, { backgroundColor: colors.primarySoft }]}> 
                   <Ionicons name="calendar-outline" size={18} color={colors.primary} />

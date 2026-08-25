@@ -9,7 +9,7 @@ import { useExpenses } from "../../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL, formatBRLCompact, parseBRL } from "../../src/utils/format";
 import { categoryById } from "../../src/models/Category";
-import { installmentEndDate } from "../../src/utils/finance";
+import { installmentEndDate, isFixedBillActiveInPeriod } from "../../src/utils/finance";
 import { friendlyFirebaseError } from "../../src/utils/errors";
 
 const MONTHS_PT = [
@@ -54,7 +54,9 @@ export default function HomeScreen() {
       : colors.info;
 
   const recent = expenses.slice(0, 5);
-  const activeFixedBills = fixedBills.filter((bill) => bill.is_active);
+  const activeFixedBills = fixedBills.filter((bill) =>
+    isFixedBillActiveInPeriod(bill, snapshot.period_start, snapshot.period_end)
+  );
 
   const handleDeleteExpense = async (id: string) => {
     try {
@@ -306,9 +308,9 @@ export default function HomeScreen() {
               {savingFixedBill ? <ActivityIndicator color="#fff" /> : <Text style={styles.fixedBillsSaveText}>Salvar conta fixa</Text>}
             </TouchableOpacity>
 
-            {fixedBills.length > 0 ? (
+            {activeFixedBills.length > 0 ? (
               <View style={styles.fixedBillsList}>
-                {fixedBills.map((bill) => (
+                {activeFixedBills.map((bill) => (
                   <View key={bill.id} style={[styles.fixedBillItem, { borderTopColor: colors.border }]}> 
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.fixedBillItemName, { color: colors.textPrimary }]} numberOfLines={1}>{bill.name}</Text>
