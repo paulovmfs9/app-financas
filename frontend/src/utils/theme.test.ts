@@ -15,6 +15,10 @@ describe("tokens de cor — light mode", () => {
   it("expõe um tom suave de vermelho para badges de alerta", () => {
     assert.equal(getColors("light").dangerSoft, "#FEE2E2");
   });
+
+  it("expõe branco fixo para conteúdo sobre o verde primário", () => {
+    assert.equal(getColors("light").onPrimary, "#FFFFFF");
+  });
 });
 
 describe("tokens de cor — dark mode (não deve mudar)", () => {
@@ -28,5 +32,9 @@ describe("tokens de cor — dark mode (não deve mudar)", () => {
 
   it("expõe um tom escuro de vermelho para badges de alerta", () => {
     assert.equal(getColors("dark").dangerSoft, "#7F1D1D");
+  });
+
+  it("mantém branco fixo para conteúdo sobre o verde primário no dark mode também", () => {
+    assert.equal(getColors("dark").onPrimary, "#FFFFFF");
   });
 });

@@ -5,6 +5,7 @@ export type ThemeMode = "light" | "dark";
 const palette = {
   primary: { light: "#059669", dark: "#10b981" },
   primarySoft: { light: "#D1FAE5", dark: "#064E3B" },
+  onPrimary: { light: "#FFFFFF", dark: "#FFFFFF" },
   background: { light: "#FFFFFF", dark: "#0A0F0D" },
   surface: { light: "#F8FAF9", dark: "#131C18" },
   surfaceAlt: { light: "#F1F5F4", dark: "#0F1612" },
@@ -23,6 +24,7 @@ export function getColors(mode: ThemeMode) {
   return {
     primary: palette.primary[mode],
     primarySoft: palette.primarySoft[mode],
+    onPrimary: palette.onPrimary[mode],
     background: palette.background[mode],
     surface: palette.surface[mode],
     surfaceAlt: palette.surfaceAlt[mode],

@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { useTheme } from "../../providers/ThemeProvider";
 import { fontSizes } from "../../utils/theme";
 
-interface QuickActionProps {
+export interface QuickActionProps {
   icon: React.ReactNode;
   label: string;
   onPress: () => void;

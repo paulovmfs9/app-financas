@@ -3,20 +3,21 @@ import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "../../providers/ThemeProvider";
 import { spacing, fontSizes } from "../../utils/theme";
 
-interface ListRowProps {
+export interface ListRowProps {
   icon: React.ReactNode;
   title: string;
   subtitle?: string;
   value?: string;
   valueColor?: string;
+  iconBg?: string;
   testID?: string;
 }
 
-export function ListRow({ icon, title, subtitle, value, valueColor, testID }: ListRowProps) {
+export function ListRow({ icon, title, subtitle, value, valueColor, iconBg, testID }: ListRowProps) {
   const { colors } = useTheme();
   return (
     <View style={styles.row} testID={testID}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.surfaceAlt }]}>{icon}</View>
+      <View style={[styles.iconWrap, { backgroundColor: iconBg ?? colors.primarySoft }]}>{icon}</View>
       <View style={styles.textWrap}>
         <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>
           {title}

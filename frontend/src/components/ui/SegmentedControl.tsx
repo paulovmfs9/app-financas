@@ -8,13 +8,15 @@ export interface SegmentOption {
   label: string;
 }
 
-interface SegmentedControlProps {
+export interface SegmentedControlProps {
   options: SegmentOption[];
   selectedId: string;
   onSelect: (id: string) => void;
   testID?: string;
 }
 
+// SegmentedControl: fixed set of views/periods where exactly one option is
+// always selected (selectedId is non-nullable) — contrast with ChipGroup.
 export function SegmentedControl({ options, selectedId, onSelect, testID }: SegmentedControlProps) {
   const { colors } = useTheme();
   return (
@@ -26,11 +28,12 @@ export function SegmentedControl({ options, selectedId, onSelect, testID }: Segm
             key={opt.id}
             accessibilityRole="button"
             accessibilityState={{ selected }}
+            activeOpacity={0.8}
             onPress={() => onSelect(opt.id)}
             testID={testID ? `${testID}-${opt.id}` : undefined}
             style={[styles.option, selected && { backgroundColor: colors.textPrimary }]}
           >
-            <Text style={[styles.text, { color: selected ? colors.surface : colors.textSecondary }]}>{opt.label}</Text>
+            <Text style={[styles.text, { color: selected ? colors.background : colors.textSecondary }]}>{opt.label}</Text>
           </TouchableOpacity>
         );
       })}

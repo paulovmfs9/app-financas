@@ -3,7 +3,7 @@ import { View, Text, TextInput, StyleSheet, TextInputProps } from "react-native"
 import { useTheme } from "../../providers/ThemeProvider";
 import { radii, spacing, fontSizes } from "../../utils/theme";
 
-interface TextFieldProps extends TextInputProps {
+export interface TextFieldProps extends TextInputProps {
   label: string;
   prefix?: string;
 }
@@ -27,6 +27,7 @@ export function TextField({ label, prefix, onFocus, onBlur, style, testID, ...re
         {prefix ? <Text style={[styles.prefix, { color: colors.textMuted }]}>{prefix}</Text> : null}
         <TextInput
           testID={testID}
+          accessibilityLabel={label}
           style={[styles.input, { color: colors.textPrimary }, style]}
           placeholderTextColor={colors.textMuted}
           onFocus={(e) => {

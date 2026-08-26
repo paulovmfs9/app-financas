@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Redirect } from "expo-router";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { spacing, fontSizes } from "../src/utils/theme";
 import {
@@ -32,6 +33,10 @@ const PERIOD_OPTIONS: SegmentOption[] = [
 ];
 
 export default function DevUiKitScreen() {
+  if (!__DEV__) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   const { colors } = useTheme();
   const [category, setCategory] = useState("food");
   const [period, setPeriod] = useState("month");

@@ -1,14 +1,18 @@
 import React from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../providers/ThemeProvider";
 import { spacing } from "../../utils/theme";
 
-interface ScreenFooterProps {
+export interface ScreenFooterProps {
   children: React.ReactNode;
 }
 
+// Handles the bottom safe-area inset itself — consumers should NOT also apply
+// a bottom safe-area edge on their own SafeAreaView when using this component.
 export function ScreenFooter({ children }: ScreenFooterProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <View
       style={[
@@ -16,6 +20,7 @@ export function ScreenFooter({ children }: ScreenFooterProps) {
         {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
+          paddingBottom: spacing.base + insets.bottom,
         },
       ]}
     >
@@ -29,7 +34,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.base,
-    paddingBottom: Platform.OS === "ios" ? spacing.xl : spacing.base,
     gap: spacing.sm,
   },
 });

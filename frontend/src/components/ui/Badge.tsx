@@ -5,7 +5,7 @@ import { radii, fontSizes } from "../../utils/theme";
 
 export type BadgeVariant = "soft" | "dark" | "danger";
 
-interface BadgeProps {
+export interface BadgeProps {
   label: string;
   variant?: BadgeVariant;
 }

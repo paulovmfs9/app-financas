@@ -5,7 +5,7 @@ import { radii, fontSizes } from "../../utils/theme";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
 
-interface ButtonProps {
+export interface ButtonProps {
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;
@@ -26,12 +26,13 @@ export function Button({ label, onPress, variant = "primary", disabled, loading,
       ? { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.primary }
       : { backgroundColor: "transparent" };
 
-  const textColor = variant === "primary" ? "#FFFFFF" : variant === "secondary" ? colors.primary : colors.textMuted;
+  const textColor = variant === "primary" ? colors.onPrimary : variant === "secondary" ? colors.primary : colors.textMuted;
 
   return (
     <TouchableOpacity
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled }}
+      accessibilityLabel={label}
       disabled={isDisabled}
       onPress={onPress}
       activeOpacity={0.8}
@@ -45,7 +46,7 @@ export function Button({ label, onPress, variant = "primary", disabled, loading,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? "#FFFFFF" : colors.primary} />
+        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.primary} />
       ) : (
         <Text style={[styles.text, { color: textColor }]}>{label}</Text>
       )}

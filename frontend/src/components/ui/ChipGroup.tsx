@@ -8,13 +8,15 @@ export interface ChipOption {
   label: string;
 }
 
-interface ChipGroupProps {
+export interface ChipGroupProps {
   options: ChipOption[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   testID?: string;
 }
 
+// ChipGroup: selectable set where nothing may be selected (e.g. optional
+// category filter — selectedId is nullable) — contrast with SegmentedControl.
 export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupProps) {
   const { colors } = useTheme();
   return (
@@ -31,7 +33,7 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
             testID={testID ? `${testID}-${opt.id}` : undefined}
             style={[styles.chip, { backgroundColor: selected ? colors.primary : colors.surfaceAlt }]}
           >
-            <Text style={[styles.text, { color: selected ? "#FFFFFF" : colors.textSecondary }]}>{opt.label}</Text>
+            <Text style={[styles.text, { color: selected ? colors.onPrimary : colors.textSecondary }]}>{opt.label}</Text>
           </TouchableOpacity>
         );
       })}
