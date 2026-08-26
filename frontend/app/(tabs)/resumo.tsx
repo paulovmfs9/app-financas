@@ -133,8 +133,9 @@ export default function ResumoScreen() {
         </Card>
 
         <View style={{ height: 24 }} />
+        <View testID="resumo-expenses-pie-chart">
         <Card>
-          <View testID="resumo-expenses-pie-chart" style={styles.chartHeader}>
+          <View style={styles.chartHeader}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Gastos por categoria</Text>
               <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}> 
@@ -178,6 +179,7 @@ export default function ResumoScreen() {
             </View>
           )}
         </Card>
+        </View>
 
         <View style={{ height: 24 }} />
         <View style={styles.tipBox}>

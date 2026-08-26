@@ -36,9 +36,15 @@ export default function HomeScreen() {
       profile?.budget_cycle_end_day ?? 31
     );
     let cancelled = false;
-    ExpenseRepository.sumMonth(uid, previousPeriod.start, previousPeriod.end).then((total) => {
-      if (!cancelled) setPreviousPeriodTotal(total);
-    });
+    ExpenseRepository.sumMonth(uid, previousPeriod.start, previousPeriod.end)
+      .then((total) => {
+        if (!cancelled) setPreviousPeriodTotal(total);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.warn("[Início] falha ao buscar total do ciclo anterior:", err?.message);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -126,7 +132,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Smart alert */}
-        <Card style={styles.alert} padding={spacing.base}>
+        <Card style={styles.alert}>
           <View testID="home-smart-alert" style={styles.alertRow}>
             <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
             <View style={{ flex: 1 }}>
@@ -192,23 +198,31 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Recentes</Text>
           {recent.length === 0 ? (
             <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={{ color: colors.textSecondary }}>Nenhum gasto ainda. Toque em "Gasto" para começar.</Text>
+              <Text style={{ color: colors.textSecondary }}>Nenhum gasto ainda. Toque em &quot;Gasto&quot; para começar.</Text>
             </View>
           ) : (
             <Card>
               {recent.map((e, index) => {
                 const cat = categoryById(e.category);
                 return (
-                  <View key={e.id} style={index > 0 ? [styles.expenseRowDividerBase, { borderTopColor: colors.border }] : undefined}>
-                    <ListRow
-                      icon={<Ionicons name={(cat?.icon as any) || "ellipsis-horizontal"} size={16} color={cat?.color || colors.primary} />}
-                      iconBg={(cat?.color || colors.primary) + "22"}
-                      title={e.description || cat?.name || "Gasto"}
-                      subtitle={`${cat?.name || e.category} • ${new Date(e.date).toLocaleDateString("pt-BR")}`}
-                      value={confirmDeleteId === e.id ? undefined : `-${formatBRL(e.amount)}`}
-                      valueColor={colors.danger}
-                      testID={`home-expense-row-${e.id}`}
-                    />
+                  <View
+                    key={e.id}
+                    style={[
+                      styles.expenseRow,
+                      index > 0 ? [styles.expenseRowDividerBase, { borderTopColor: colors.border }] : null,
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <ListRow
+                        icon={<Ionicons name={(cat?.icon as any) || "ellipsis-horizontal"} size={16} color={cat?.color || colors.primary} />}
+                        iconBg={(cat?.color || colors.primary) + "22"}
+                        title={e.description || cat?.name || "Gasto"}
+                        subtitle={`${cat?.name || e.category} • ${new Date(e.date).toLocaleDateString("pt-BR")}`}
+                        value={confirmDeleteId === e.id ? undefined : `-${formatBRL(e.amount)}`}
+                        valueColor={colors.danger}
+                        testID={`home-expense-row-${e.id}`}
+                      />
+                    </View>
                     {confirmDeleteId === e.id ? (
                       <View style={styles.deleteConfirm}>
                         <TouchableOpacity
@@ -274,9 +288,9 @@ const styles = StyleSheet.create({
   overline: { fontSize: 11, fontWeight: "700", letterSpacing: 2, marginBottom: 6 },
   greeting: { fontSize: fontSizes.h2, fontWeight: "700", letterSpacing: -0.5 },
   heroCard: { marginTop: spacing.xl, gap: 6, alignItems: "flex-start" },
-  heroLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
+  heroLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1 },
   hero: { fontSize: 48, fontWeight: "800", letterSpacing: -1.5 },
-  heroSub: { fontSize: fontSizes.small, marginTop: 6 },
+  heroSub: { fontSize: fontSizes.small },
   planRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.lg, marginBottom: spacing.lg },
   planIndicatorText: { flex: 1, fontSize: fontSizes.small, fontWeight: "700" },
   planAction: { fontSize: fontSizes.small, fontWeight: "800" },
@@ -294,6 +308,7 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing.xxl },
   sectionTitle: { fontSize: fontSizes.h3, fontWeight: "700", marginBottom: spacing.md, letterSpacing: -0.3 },
   emptyBox: { padding: spacing.lg, borderRadius: radii.lg, borderWidth: 1, alignItems: "center" },
+  expenseRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   expenseRowDividerBase: { borderTopWidth: 1, marginTop: spacing.xs, paddingTop: spacing.xs },
   deleteButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
   deleteConfirm: { flexDirection: "row", alignItems: "center", gap: spacing.xs },

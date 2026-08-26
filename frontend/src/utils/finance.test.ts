@@ -25,6 +25,21 @@ describe("previousCycleBounds", () => {
     const previous = previousCycleBounds(current.start, 1, 31);
     assert.equal(previous.end < current.start, true);
   });
+
+  it("não sobrepõe o ciclo atual quando início e fim são o mesmo dia (ex: 15 a 15)", () => {
+    const current = cycleBounds(new Date(2026, 7, 15), 15, 15);
+    const previous = previousCycleBounds(current.start, 15, 15);
+    assert.equal(previous.end < current.start, true);
+    assert.equal(previous.end, current.start - 1);
+  });
+
+  it("cruza o limite do ano corretamente (ciclo de janeiro volta para dezembro do ano anterior)", () => {
+    const current = cycleBounds(new Date(2026, 0, 15), 1, 31);
+    const previous = previousCycleBounds(current.start, 1, 31);
+    const expected = cycleBounds(new Date(2025, 11, 15), 1, 31);
+    assert.equal(previous.start, expected.start);
+    assert.equal(previous.end, expected.end);
+  });
 });
 
 describe("percentChange", () => {
