@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,8 +9,10 @@ import { useExpenses } from "../../src/providers/ExpensesProvider";
 import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL, formatBRLCompact, parseBRL } from "../../src/utils/format";
 import { categoryById } from "../../src/models/Category";
-import { installmentEndDate, isFixedBillActiveInPeriod } from "../../src/utils/finance";
+import { installmentEndDate, isFixedBillActiveInPeriod, previousCycleBounds, percentChange } from "../../src/utils/finance";
 import { friendlyFirebaseError } from "../../src/utils/errors";
+import { Card as UiCard, Badge, QuickAction } from "../../src/components/ui";
+import { ExpenseRepository } from "../../src/repositories/ExpenseRepository";
 
 const MONTHS_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -31,6 +33,25 @@ export default function HomeScreen() {
   const [fixedBillInstallments, setFixedBillInstallments] = useState("2");
   const [savingFixedBill, setSavingFixedBill] = useState(false);
   const [deletingFixedBillId, setDeletingFixedBillId] = useState<string | null>(null);
+  const [previousPeriodTotal, setPreviousPeriodTotal] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!profile?.uid) return;
+    const uid = profile.uid;
+    const previousPeriod = previousCycleBounds(
+      snapshot.period_start,
+      profile?.budget_cycle_start_day ?? 1,
+      profile?.budget_cycle_end_day ?? 31
+    );
+    let cancelled = false;
+    ExpenseRepository.sumMonth(uid, previousPeriod.start, previousPeriod.end).then((total) => {
+      if (!cancelled) setPreviousPeriodTotal(total);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshot.period_start, profile?.uid, profile?.budget_cycle_start_day, profile?.budget_cycle_end_day]);
+
   const router = useRouter();
 
   const now = new Date();
@@ -52,6 +73,8 @@ export default function HomeScreen() {
       : snapshot.alert.level === "danger"
       ? colors.danger
       : colors.info;
+
+  const variationPercent = previousPeriodTotal !== null ? percentChange(snapshot.total_spent, previousPeriodTotal) : null;
 
   const recent = expenses.slice(0, 5);
   const activeFixedBills = fixedBills.filter((bill) =>
@@ -142,19 +165,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.overline, { color: colors.textMuted }]}>{monthLabel.toUpperCase()}</Text>
-            <Text style={[styles.greeting, { color: colors.textPrimary }]}>
-              Olá{profile?.name?.trim() ? `, ${profile.name.trim()}` : ""}
-            </Text>
-          </View>
-          <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-        </View>
+        <Text style={[styles.overline, { color: colors.textMuted }]}>{monthLabel.toUpperCase()}</Text>
+        <Text style={[styles.greeting, { color: colors.textPrimary }]}>
+          Olá{profile?.name?.trim() ? `, ${profile.name.trim()}` : ""}
+        </Text>
 
         {/* HERO balance */}
-        <View style={styles.heroWrap}>
-          <Text style={[styles.heroLabel, { color: colors.textSecondary }]}>Saldo do mês</Text>
+        <UiCard style={styles.heroCard}>
+          <Text style={[styles.heroLabel, { color: colors.textSecondary }]}>SALDO DO MÊS</Text>
           <Text
             testID="home-hero-balance"
             style={[styles.hero, { color: snapshot.saldo_restante < 0 ? colors.danger : colors.textPrimary }]}
@@ -163,13 +181,23 @@ export default function HomeScreen() {
           >
             {formatBRL(snapshot.saldo_restante)}
           </Text>
+          {variationPercent !== null ? (
+            <Badge
+              label={`${variationPercent > 0 ? "+" : ""}${variationPercent}% vs. ciclo anterior`}
+              variant={variationPercent > 0 ? "danger" : "soft"}
+            />
+          ) : null}
           <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
             de {formatBRL(Math.max(0, snapshot.salary - snapshot.fixed_bills))} disponíveis
           </Text>
-        </View>
+        </UiCard>
 
-        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: hasUnlimitedExpenses ? colors.primary : colors.border }]}> 
-          <Text style={[styles.planIndicatorText, { color: hasUnlimitedExpenses ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+        <View style={styles.planRow}>
+          {hasUnlimitedExpenses ? (
+            <Badge label={usageLabel} variant="soft" />
+          ) : (
+            <Text style={[styles.planIndicatorText, { color: colors.textSecondary }]}>{usageLabel}</Text>
+          )}
           {!hasUnlimitedExpenses ? (
             <TouchableOpacity testID="home-upgrade-button" activeOpacity={0.75} onPress={() => router.push("/plans" as any)}>
               <Text style={[styles.planAction, { color: colors.primary }]}>Ver planos</Text>
@@ -178,12 +206,42 @@ export default function HomeScreen() {
         </View>
 
         {/* Smart alert */}
-        <View testID="home-smart-alert" style={[styles.alert, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.alertTitle, { color: colors.textPrimary }]}>{snapshot.alert.title}</Text>
-            <Text style={[styles.alertMsg, { color: colors.textSecondary }]}>{snapshot.alert.message}</Text>
+        <UiCard style={styles.alert} padding={spacing.base}>
+          <View testID="home-smart-alert" style={styles.alertRow}>
+            <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.alertTitle, { color: colors.textPrimary }]}>{snapshot.alert.title}</Text>
+              <Text style={[styles.alertMsg, { color: colors.textSecondary }]}>{snapshot.alert.message}</Text>
+            </View>
           </View>
+        </UiCard>
+
+        {/* Quick actions */}
+        <View style={styles.quickActions}>
+          <QuickAction
+            icon={<Ionicons name="add" size={20} color={colors.primary} />}
+            label="Gasto"
+            onPress={() => router.push("/add-expense")}
+            testID="home-qa-gasto"
+          />
+          <QuickAction
+            icon={<Ionicons name="document-text-outline" size={20} color={colors.primary} />}
+            label="Contas"
+            onPress={() => router.push("/fixed-bills")}
+            testID="home-qa-contas"
+          />
+          <QuickAction
+            icon={<Ionicons name="download-outline" size={20} color={colors.primary} />}
+            label="Exportar"
+            onPress={() => router.push("/(tabs)/resumo" as any)}
+            testID="home-qa-exportar"
+          />
+          <QuickAction
+            icon={<Ionicons name="star-outline" size={20} color={colors.primary} />}
+            label="Pro"
+            onPress={() => router.push("/plans" as any)}
+            testID="home-qa-pro"
+          />
         </View>
 
         {/* Cards grid */}
@@ -451,21 +509,21 @@ function Card({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.xl, paddingBottom: spacing.xl },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   overline: { fontSize: 11, fontWeight: "700", letterSpacing: 2, marginBottom: 6 },
   greeting: { fontSize: fontSizes.h2, fontWeight: "700", letterSpacing: -0.5 },
-  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 8 },
-  heroWrap: { paddingVertical: spacing.xxl, alignItems: "flex-start" },
-  heroLabel: { fontSize: fontSizes.small, marginBottom: 6 },
+  heroCard: { marginTop: spacing.xl, gap: 6, alignItems: "flex-start" },
+  heroLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 6 },
   hero: { fontSize: 48, fontWeight: "800", letterSpacing: -1.5 },
   heroSub: { fontSize: fontSizes.small, marginTop: 6 },
-  planIndicator: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
+  planRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.lg, marginBottom: spacing.lg },
   planIndicatorText: { flex: 1, fontSize: fontSizes.small, fontWeight: "700" },
   planAction: { fontSize: fontSizes.small, fontWeight: "800" },
-  alert: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
+  alert: { marginBottom: spacing.lg },
+  alertRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   alertDot: { width: 10, height: 10, borderRadius: 5 },
   alertTitle: { fontSize: fontSizes.body, fontWeight: "700" },
   alertMsg: { fontSize: fontSizes.small, marginTop: 2 },
+  quickActions: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.xl },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
   card: { flexBasis: "48%", flexGrow: 1, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, minHeight: 100 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
