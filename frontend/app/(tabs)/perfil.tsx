@@ -112,8 +112,6 @@ export default function PerfilScreen() {
               placeholder="0,00"
             />
 
-            <View style={{ height: spacing.base }} />
-
             <TextField
               testID="perfil-bills-input"
               label="Contas fixas"
@@ -123,8 +121,6 @@ export default function PerfilScreen() {
               onChangeText={setBills}
               placeholder="0,00"
             />
-
-            <View style={{ height: spacing.base }} />
 
             <Text style={[styles.label, { color: colors.textSecondary }]}>Ciclo financeiro</Text>
             <Text style={[styles.cycleHint, { color: colors.textMuted }]}>Use o mesmo dia no início e no fim para fechar no mês seguinte. Ex: 15 a 15.</Text>
@@ -233,7 +229,7 @@ const styles = StyleSheet.create({
   section: { fontSize: fontSizes.h3, fontWeight: "700", marginTop: spacing.xxl, marginBottom: spacing.base },
   label: { fontSize: fontSizes.small, fontWeight: "600", marginBottom: 8 },
   cycleRow: { flexDirection: "row", gap: spacing.md },
-  cycleHint: { fontSize: fontSizes.micro, lineHeight: 16, marginTop: -4, marginBottom: spacing.sm },
+  cycleHint: { fontSize: fontSizes.micro, lineHeight: 16, marginTop: -20, marginBottom: spacing.sm },
   plansCard: { flexDirection: "row", alignItems: "center" },
   logoutBtn: { marginTop: spacing.xxl, paddingVertical: 16, borderRadius: radii.lg, borderWidth: 1, alignItems: "center", justifyContent: "center", flexDirection: "row" },
   footnote: { textAlign: "center", marginTop: spacing.xl, fontSize: fontSizes.micro },
