@@ -10,6 +10,7 @@ import { spacing, radii, fontSizes } from "../../src/utils/theme";
 import { formatBRL } from "../../src/utils/format";
 import { CATEGORIES, categoryById } from "../../src/models/Category";
 import { ExportModal } from "../../src/components/ExportModal";
+import { Card, Badge } from "../../src/components/ui";
 import {
   exportFinancialReport,
   showExportResult,
@@ -96,14 +97,18 @@ export default function ResumoScreen() {
         <Text style={[styles.title, { color: colors.textPrimary }]}>{monthLabel}</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Ciclo de {periodLabel}.</Text>
 
-        <View style={[styles.planIndicator, { backgroundColor: colors.surface, borderColor: hasUnlimitedExpenses ? colors.primary : colors.border }]}> 
-          <Text style={[styles.planIndicatorText, { color: hasUnlimitedExpenses ? colors.primary : colors.textSecondary }]}>{usageLabel}</Text>
+        <View style={styles.planRow}>
+          {hasUnlimitedExpenses ? (
+            <Badge label={usageLabel} variant="soft" />
+          ) : (
+            <Text style={[styles.planIndicatorText, { color: colors.textSecondary }]}>{usageLabel}</Text>
+          )}
           {!hasUnlimitedExpenses ? (
             <Text testID="resumo-upgrade-button" onPress={() => router.push("/plans" as any)} style={[styles.planAction, { color: colors.primary }]}>Ver planos</Text>
           ) : null}
         </View>
 
-        <View style={[styles.table, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <Card padding={0} style={styles.table}>
           {rows.map((r, i) => {
             const isLast = i === rows.length - 1;
             const valColor =
@@ -125,11 +130,11 @@ export default function ResumoScreen() {
               </View>
             );
           })}
-        </View>
+        </Card>
 
         <View style={{ height: 24 }} />
-        <View testID="resumo-expenses-pie-chart" style={[styles.chartBox, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <View style={styles.chartHeader}>
+        <Card>
+          <View testID="resumo-expenses-pie-chart" style={styles.chartHeader}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.chartTitle, { color: colors.textPrimary }]}>Gastos por categoria</Text>
               <Text style={[styles.chartSubtitle, { color: colors.textSecondary }]}> 
@@ -172,12 +177,12 @@ export default function ResumoScreen() {
               </View>
             </View>
           )}
-        </View>
+        </Card>
 
         <View style={{ height: 24 }} />
-        <View style={[styles.tipBox, { backgroundColor: colors.primarySoft }]}> 
-          <Text style={[styles.tipTitle, { color: colors.primary }]}>Dica do dia</Text>
-          <Text style={[styles.tipBody, { color: colors.textPrimary }]}> 
+        <View style={styles.tipBox}>
+          <Text style={styles.tipTitle}>Dica do dia</Text>
+          <Text style={styles.tipBody}>
             Tente manter sua média diária próxima do limite ideal. Pequenos ajustes diários fazem grande diferença no fim do mês.
           </Text>
         </View>
@@ -273,14 +278,13 @@ const styles = StyleSheet.create({
   overline: { fontSize: 11, fontWeight: "700", letterSpacing: 2, marginBottom: 6 },
   title: { fontSize: fontSizes.h1, fontWeight: "800", letterSpacing: -0.8 },
   subtitle: { fontSize: fontSizes.body, marginTop: 6, marginBottom: spacing.xl },
-  planIndicator: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.lg },
+  planRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.lg },
   planIndicatorText: { flex: 1, fontSize: fontSizes.small, fontWeight: "700" },
   planAction: { fontSize: fontSizes.small, fontWeight: "800" },
-  table: { borderRadius: radii.lg, borderWidth: 1, paddingHorizontal: spacing.base },
+  table: { paddingHorizontal: spacing.base },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 18 },
   rowLabel: { fontSize: fontSizes.body, fontWeight: "500" },
   rowValue: { fontSize: fontSizes.body, fontWeight: "700" },
-  chartBox: { borderRadius: radii.lg, borderWidth: 1, padding: spacing.base },
   chartHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: spacing.md, marginBottom: spacing.base },
   chartTitle: { fontSize: fontSizes.h3, fontWeight: "700", letterSpacing: -0.2 },
   chartSubtitle: { fontSize: fontSizes.small, marginTop: 4 },
@@ -300,7 +304,7 @@ const styles = StyleSheet.create({
   legendDot: { width: 12, height: 12, borderRadius: 6 },
   legendName: { fontSize: fontSizes.small, fontWeight: "700" },
   legendValue: { fontSize: fontSizes.micro, marginTop: 2 },
-  tipBox: { padding: spacing.lg, borderRadius: radii.lg },
-  tipTitle: { fontSize: fontSizes.small, fontWeight: "800", letterSpacing: 0.5, marginBottom: 6, textTransform: "uppercase" },
-  tipBody: { fontSize: fontSizes.body, lineHeight: 22 },
+  tipBox: { padding: spacing.lg, borderRadius: radii.lg, backgroundColor: "#0A0F0D" },
+  tipTitle: { fontSize: fontSizes.small, fontWeight: "800", letterSpacing: 0.5, marginBottom: 6, textTransform: "uppercase", color: "#10B981" },
+  tipBody: { fontSize: fontSizes.body, lineHeight: 22, color: "#F3F4F6" },
 });
