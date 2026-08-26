@@ -72,8 +72,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     borderWidth: 1,
     padding: spacing.xl,
     paddingBottom: spacing.xxl,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: fontSizes.small, marginTop: 3 },
   closeButton: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
   option: { flexDirection: "row", alignItems: "center", gap: spacing.md, borderWidth: 1, borderRadius: radii.lg, padding: spacing.base, marginBottom: spacing.sm },
-  optionIcon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  optionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   optionTitle: { fontSize: fontSizes.body, fontWeight: "700" },
   optionSubtitle: { fontSize: fontSizes.micro, marginTop: 2 },
 });
