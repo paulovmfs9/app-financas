@@ -83,20 +83,43 @@ manual antes de fechar a Fase 2.
 
 ## Kit de componentes (Fase 1)
 
-### Nota sobre tokens de cor (page vs. card)
+### Nota sobre tokens de cor (page vs. card) — resolvido na Fase 1
 
 Nos mockups aprovados, o fundo da tela é branco puro e os cards (saldo,
 resumo, linhas de formulário) usam um tom levemente esverdeado/acinzentado
-para se destacar da página — o inverso da relação atual em `theme.ts`,
-onde `background` (`#F8FAF9`, o tom sutil) é o fundo da `SafeAreaView` e
-`surface` (`#FFFFFF`) é reservado pra cards. A Fase 1 precisa decidir
-entre (a) inverter o uso dos tokens existentes nas telas, ou (b)
-introduzir um novo token (ex.: `surfaceMuted`) para o fill do card sem
-mexer no significado de `background`/`surface` em outros lugares que já
-os consomem. Sem novos valores de cor a criar — só a atribuição de qual
-token vai em qual camada. Cards de destaque com fundo branco (ex. o
-card de gráfico do Resumo) se diferenciam da página com borda +
-sombra sutil, já que ambos ficam brancos.
+para se destacar da página. Resolvido invertendo os dois valores hex do
+modo claro em `theme.ts`: `background.light` agora é `#FFFFFF` (fundo de
+página) e `surface.light` agora é `#F8FAF9` (fill de card). O modo escuro
+não mudou — já tinha a relação certa. Todas as telas existentes herdam o
+novo visual automaticamente, sem edição por tela (ver
+`docs/superpowers/plans/2026-08-26-visual-redesign-fase1-component-kit.md`,
+Task 1). Nenhum token novo foi criado para isso.
+
+**Regra de aninhamento** (adicionada após a revisão final da Fase 1):
+`surface` (`#F8FAF9`) e `surfaceAlt` (`#F1F5F4`) ficam ~4% próximos em
+luminância no modo claro — um componente com fill `surfaceAlt` dentro de
+um `Card` (fill `surface`) quase desaparece. Regra: componentes do kit
+com fill `surfaceAlt`/`surface` (ex. o círculo de ícone do `ListRow`, o
+track do `ChipGroup`/`SegmentedControl`) devem ficar direto sobre
+`background` (a página), não aninhados dentro de outro `Card`. Quando
+precisar aninhar, use um fill com mais contraste (ex. `ListRow` aceita
+`iconBg?: string`, com default `primarySoft`, para ficar visível dentro
+de cards — ver Fase 1, Fix 4 da revisão final).
+
+Cards de destaque (ex. o card de gráfico do Resumo) se diferenciam da
+página com **borda**, não sombra — ver decisão de sombras abaixo.
+
+### Decisão: bordas em vez de sombra
+
+Diferente do texto original desta spec ("sombra suave", "sombra superior
+sutil"), a Fase 1 implementou todos os componentes do kit (`Card`,
+`ScreenFooter`, etc.) usando apenas `borderWidth`/`borderColor` para
+separação visual — sem `shadowColor`/`elevation`. Decisão deliberada,
+confirmada na revisão final: bordas já dão contraste suficiente nos
+mockups aprovados, e evitam a complexidade de sombras consistentes entre
+iOS/Android/Web. Nenhum token de sombra foi criado em `theme.ts`. Fases
+2/3 devem seguir o mesmo padrão (borda, não sombra) a menos que uma
+necessidade visual concreta apareça.
 
 Novo diretório `frontend/src/components/ui/`, todos consumindo
 `useTheme()` (dark mode reaproveita os tokens existentes — não é uma
@@ -113,10 +136,13 @@ tela nova, é o mesmo componente com cores diferentes):
 | `ListRow` | ícone circular + título + subtítulo opcional + valor |
 | `QuickAction` | ícone + label, usado no grid de ações rápidas |
 | `SegmentedControl` | alternância tipo pill (ex: períodos) |
-| `ScreenFooter` | rodapé fixo com sombra superior sutil, para telas de formulário |
+| `ScreenFooter` | rodapé fixo com borda superior, insets de área segura (`useSafeAreaInsets`), para telas de formulário |
 
-Possível adição de 1-2 tokens em `theme.ts` (ex: um valor de sombra
-padrão para `Card`), sem quebrar os tokens existentes.
+`theme.ts` ganhou dois tokens novos na Fase 1: `dangerSoft` (fundo suave
+pra `Badge` variante "danger") e `onPrimary` (branco fixo pra texto/ícone
+sobre `colors.primary`, usado por `Button`, `ChipGroup` e `Toggle`).
+Nenhum token de sombra foi criado — ver "Decisão: bordas em vez de
+sombra" acima.
 
 ## Fases de implementação
 
