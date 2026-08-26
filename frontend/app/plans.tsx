@@ -6,7 +6,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { useAuth } from "../src/providers/AuthProvider";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
-import { PLAN_DEFINITIONS, normalizePlanKey, type PlanDefinition, type PlanKey } from "../src/services/MonetizationService";
+import {
+  PLAN_DEFINITIONS,
+  annualSavingsPercent,
+  normalizePlanKey,
+  type BillingInterval,
+  type PlanDefinition,
+  type PlanKey,
+  type PlanPrice,
+} from "../src/services/MonetizationService";
 import { initSubscriptionPayment } from "../src/services/PaymentService";
 import { friendlyFirebaseError } from "../src/utils/errors";
 
@@ -16,17 +24,14 @@ export default function PlansScreen() {
   const router = useRouter();
   const currentPlan = normalizePlanKey(profile?.plan);
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+  const [proInterval, setProInterval] = useState<BillingInterval>("monthly");
 
-  const startSubscription = async (plan: PlanDefinition) => {
+  const startSubscription = async (plan: PlanDefinition, price: PlanPrice) => {
     if (plan.key === "basic") return;
-    if (plan.comingSoon) {
-      Alert.alert("Plano Pro", "As funcionalidades do Plano Pro serão liberadas em breve.");
-      return;
-    }
 
     setLoadingPlan(plan.key);
     try {
-      const payment = await initSubscriptionPayment(plan.key, "manual");
+      const payment = await initSubscriptionPayment(plan.key as Exclude<PlanKey, "basic">, price.interval, "manual");
       if (payment.checkoutUrl) {
         await Linking.openURL(payment.checkoutUrl);
         Alert.alert("Pagamento iniciado", "Conclua o pagamento no checkout para ativar seu plano.");
@@ -34,7 +39,7 @@ export default function PlansScreen() {
       }
       Alert.alert(
         "Checkout pendente",
-        "A função de pagamento já foi criada. Configure STANDARD_CHECKOUT_URL e PAYMENT_WEBHOOK_SECRET nas Firebase Functions para ativar o checkout real."
+        "A função de pagamento já foi criada. Configure PRO_MONTHLY_CHECKOUT_URL / PRO_ANNUAL_CHECKOUT_URL e PAYMENT_WEBHOOK_SECRET nas Firebase Functions para ativar o checkout real."
       );
     } catch (error: any) {
       Alert.alert("Erro no pagamento", friendlyFirebaseError(error, "Não foi possível iniciar a assinatura."));
@@ -45,7 +50,7 @@ export default function PlansScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity accessibilityRole="button" testID="plans-back-button" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -66,7 +71,9 @@ export default function PlansScreen() {
               active={currentPlan === plan.key}
               colors={colors}
               loading={loadingPlan === plan.key}
-              onPress={() => startSubscription(plan)}
+              interval={proInterval}
+              onIntervalChange={setProInterval}
+              onPress={(price) => startSubscription(plan, price)}
             />
           ))}
         </View>
@@ -81,15 +88,23 @@ function PlanCard({
   colors,
   onPress,
   loading = false,
+  interval,
+  onIntervalChange,
 }: {
   plan: PlanDefinition;
   active: boolean;
   colors: any;
-  onPress: () => void;
+  onPress: (price: PlanPrice) => void;
   loading?: boolean;
+  interval: BillingInterval;
+  onIntervalChange: (interval: BillingInterval) => void;
 }) {
-  const disabled = active || plan.comingSoon || plan.key === "basic" || loading;
-  const buttonLabel = active ? "Plano atual" : plan.comingSoon ? "Em breve" : plan.key === "basic" ? "Incluso" : "Assinar";
+  const hasMultiplePrices = plan.prices.length > 1;
+  const price = hasMultiplePrices ? plan.prices.find((p) => p.interval === interval) ?? plan.prices[0] : plan.prices[0];
+  const isAnnual = price.interval === "annual";
+
+  const disabled = active || plan.key === "basic" || loading;
+  const buttonLabel = active ? "Plano atual" : plan.key === "basic" ? "Incluso" : "Assinar";
 
   return (
     <View
@@ -108,22 +123,56 @@ function PlanCard({
           <Text style={[styles.planDescription, { color: colors.textSecondary }]}>{plan.description}</Text>
         </View>
         {plan.highlighted ? (
-          <View style={[styles.badge, { backgroundColor: colors.primarySoft }]}> 
+          <View style={[styles.badge, { backgroundColor: colors.primarySoft }]}>
             <Text style={[styles.badgeText, { color: colors.primary }]}>Mais escolhido</Text>
           </View>
         ) : null}
       </View>
 
+      {hasMultiplePrices ? (
+        <View style={[styles.intervalToggle, { borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}>
+          {plan.prices.map((p) => {
+            const isSelected = p.interval === interval;
+            return (
+              <TouchableOpacity
+                key={p.interval}
+                testID={`plan-interval-${p.interval}`}
+                accessibilityRole="button"
+                activeOpacity={0.8}
+                onPress={() => onIntervalChange(p.interval)}
+                style={[
+                  styles.intervalOption,
+                  isSelected ? { backgroundColor: colors.primary } : null,
+                ]}
+              >
+                <Text style={[styles.intervalOptionText, { color: isSelected ? "#fff" : colors.textSecondary }]}>
+                  {p.interval === "monthly" ? "Mensal" : "Anual"}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : null}
+
       <View style={styles.priceBlock}>
         <View style={styles.priceLine}>
-          <Text style={[styles.pricePrefix, { color: colors.textMuted }]}>de</Text>
-          <Text style={[styles.originalPrice, { color: colors.textMuted }]}>{plan.originalPrice}</Text>
+          <Text style={[styles.currentPrice, { color: colors.textPrimary }]}>{price.priceLabel}</Text>
+          <Text style={[styles.period, { color: colors.textMuted }]}>{price.periodLabel}</Text>
+          {isAnnual ? (
+            <View style={[styles.savingsBadge, { backgroundColor: colors.primarySoft }]}>
+              <Text style={[styles.savingsBadgeText, { color: colors.primary }]}>Economize {annualSavingsPercent()}%</Text>
+            </View>
+          ) : null}
         </View>
-        <View style={styles.priceLine}>
-          <Text style={[styles.pricePrefix, { color: colors.textSecondary }]}>por</Text>
-          <Text style={[styles.currentPrice, { color: colors.textPrimary }]}>{plan.currentPrice}</Text>
-          <Text style={[styles.period, { color: colors.textMuted }]}>/mês</Text>
-        </View>
+        {price.fullPriceLabel ? (
+          <Text style={[styles.priceNote, { color: colors.textSecondary }]}>{price.fullPriceLabel}</Text>
+        ) : null}
+        {price.installmentLabel ? (
+          <Text style={[styles.priceNote, { color: colors.textSecondary }]}>{price.installmentLabel}</Text>
+        ) : null}
+        {price.installmentNote ? (
+          <Text style={[styles.priceFinePrint, { color: colors.textMuted }]}>{price.installmentNote}</Text>
+        ) : null}
       </View>
 
       <View style={styles.features}>
@@ -139,7 +188,7 @@ function PlanCard({
         accessibilityRole="button"
         activeOpacity={0.82}
         disabled={disabled}
-        onPress={onPress}
+        onPress={() => onPress(price)}
         testID={`plan-action-${plan.key}`}
         style={[
           styles.actionButton,
@@ -183,12 +232,24 @@ const styles = StyleSheet.create({
   planDescription: { fontSize: fontSizes.small, lineHeight: 20, marginTop: 4, maxWidth: 230 },
   badge: { borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 6 },
   badgeText: { fontSize: 11, fontWeight: "900" },
+  intervalToggle: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    padding: 4,
+    marginTop: spacing.lg,
+    alignSelf: "flex-start",
+  },
+  intervalOption: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: radii.pill },
+  intervalOptionText: { fontSize: fontSizes.small, fontWeight: "800" },
   priceBlock: { marginTop: spacing.lg, marginBottom: spacing.base },
-  priceLine: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
-  pricePrefix: { fontSize: fontSizes.small, fontWeight: "700", marginBottom: 4 },
-  originalPrice: { fontSize: fontSizes.body, fontWeight: "700", textDecorationLine: "line-through" },
+  priceLine: { flexDirection: "row", alignItems: "flex-end", gap: 6, flexWrap: "wrap" },
   currentPrice: { fontSize: 34, fontWeight: "900" },
   period: { fontSize: fontSizes.small, fontWeight: "700", marginBottom: 7 },
+  savingsBadge: { borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 7, marginLeft: 4 },
+  savingsBadgeText: { fontSize: 11, fontWeight: "900" },
+  priceNote: { fontSize: fontSizes.small, fontWeight: "700", marginTop: 6 },
+  priceFinePrint: { fontSize: 12, marginTop: 2 },
   features: { gap: spacing.sm, marginTop: spacing.sm },
   featureRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   featureText: { flex: 1, fontSize: fontSizes.small, lineHeight: 20 },

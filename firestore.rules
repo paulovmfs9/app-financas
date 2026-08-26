@@ -6,11 +6,14 @@ service cloud.firestore {
     }
 
     function validSubscriptionTypes() {
+      // 'standard' segue aceito por compatibilidade: assinantes de antes da
+      // reestruturação de planos (Standard -> Pro) ainda carregam esse valor.
       return request.resource.data.plan in ['free', 'basic', 'standard', 'pro']
         && request.resource.data.subscriptionStatus in ['inactive', 'active', 'canceled']
         && (request.resource.data.subscriptionProvider == null || request.resource.data.subscriptionProvider in ['web', 'mercadopago', 'stripe', 'apple', 'google', 'revenuecat', 'manual'])
         && request.resource.data.subscriptionPrice is number
         && request.resource.data.subscriptionCurrency == 'BRL'
+        && (request.resource.data.get('subscriptionInterval', null) == null || request.resource.data.get('subscriptionInterval', null) in ['monthly', 'annual'])
         && (request.resource.data.subscriptionExpiresAt == null || request.resource.data.subscriptionExpiresAt is number || request.resource.data.subscriptionExpiresAt is timestamp)
         && (request.resource.data.updatedAt is number || request.resource.data.updatedAt is timestamp);
     }
@@ -21,6 +24,7 @@ service cloud.firestore {
         && request.resource.data.subscriptionProvider == null
         && request.resource.data.subscriptionPrice == 9.9
         && request.resource.data.subscriptionCurrency == 'BRL'
+        && request.resource.data.get('subscriptionInterval', null) == null
         && request.resource.data.subscriptionExpiresAt == null;
     }
 
@@ -31,6 +35,7 @@ service cloud.firestore {
         && request.resource.data.subscriptionProvider == resource.data.subscriptionProvider
         && request.resource.data.subscriptionPrice == resource.data.subscriptionPrice
         && request.resource.data.subscriptionCurrency == resource.data.subscriptionCurrency
+        && request.resource.data.get('subscriptionInterval', null) == resource.data.get('subscriptionInterval', null)
         && request.resource.data.subscriptionExpiresAt == resource.data.subscriptionExpiresAt;
     }
 
@@ -51,6 +56,7 @@ service cloud.firestore {
         'subscriptionProvider',
         'subscriptionPrice',
         'subscriptionCurrency',
+        'subscriptionInterval',
         'subscriptionExpiresAt',
         'updatedAt'
       ])

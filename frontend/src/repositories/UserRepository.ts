@@ -15,6 +15,7 @@ function missingDefaultFields(data: Partial<User>): boolean {
     data.subscriptionProvider === undefined ||
     data.subscriptionPrice === undefined ||
     data.subscriptionCurrency === undefined ||
+    data.subscriptionInterval === undefined ||
     data.subscriptionExpiresAt === undefined ||
     data.updatedAt === undefined ||
     data.budget_cycle_start_day === undefined ||
@@ -30,6 +31,7 @@ function defaultBackfill(data: Partial<User>) {
     subscriptionProvider: data.subscriptionProvider ?? subscription.subscriptionProvider,
     subscriptionPrice: data.subscriptionPrice ?? subscription.subscriptionPrice,
     subscriptionCurrency: data.subscriptionCurrency ?? subscription.subscriptionCurrency,
+    subscriptionInterval: data.subscriptionInterval ?? subscription.subscriptionInterval,
     subscriptionExpiresAt: data.subscriptionExpiresAt ?? subscription.subscriptionExpiresAt,
     budget_cycle_start_day: data.budget_cycle_start_day ?? 1,
     budget_cycle_end_day: data.budget_cycle_end_day ?? 31,

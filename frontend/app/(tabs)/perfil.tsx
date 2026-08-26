@@ -183,7 +183,7 @@ export default function PerfilScreen() {
           >
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.textPrimary, fontWeight: "800", fontSize: fontSizes.body }}>Ver planos</Text>
-              <Text style={{ color: colors.textSecondary, fontSize: fontSizes.small, marginTop: 2 }}>Básico, Standard e Pro</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: fontSizes.small, marginTop: 2 }}>Básico e Pro</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>

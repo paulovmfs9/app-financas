@@ -4,6 +4,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "test": "tsc -p tsconfig.test.json && cd .test-build && node --test",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "npm run build && firebase deploy --only functions"
   },

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": ".test-build"
+  },
+  "include": ["src/pricing.ts", "src/pricing.test.ts"]
+}
