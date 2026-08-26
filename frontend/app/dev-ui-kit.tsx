@@ -52,13 +52,6 @@ export default function DevUiKitScreen() {
           <Badge label="Limite atingido" variant="danger" />
         </Card>
 
-        <Text style={[styles.section, { color: colors.textMuted }]}>BUTTON</Text>
-        <Button label="Salvar gasto" onPress={() => {}} variant="primary" testID="dev-btn-primary" />
-        <View style={{ height: spacing.sm }} />
-        <Button label="Cancelar" onPress={() => {}} variant="secondary" testID="dev-btn-secondary" />
-        <View style={{ height: spacing.sm }} />
-        <Button label="Esqueci minha senha" onPress={() => {}} variant="ghost" testID="dev-btn-ghost" />
-
         <Text style={[styles.section, { color: colors.textMuted }]}>TEXTFIELD</Text>
         <TextField label="Valor" prefix="R$" placeholder="0,00" keyboardType="decimal-pad" testID="dev-field-valor" />
 
