@@ -15,6 +15,8 @@
     "src/services/MonetizationService.ts",
     "src/services/MonetizationService.test.ts",
     "src/models/User.ts",
-    "src/utils/format.ts"
+    "src/utils/format.ts",
+    "src/utils/theme.ts",
+    "src/utils/theme.test.ts"
   ]
 }
