@@ -60,6 +60,19 @@ export function cycleBounds(
   return buildPeriod(dateAtDay(y, startMonth, start, false), dateAtDay(y, endMonth, end, true));
 }
 
+export function previousCycleBounds(
+  currentPeriodStart: number,
+  startDay = 1,
+  endDay = 31
+): { start: number; end: number; daysInMonth: number } {
+  return cycleBounds(new Date(currentPeriodStart - 1), startDay, endDay);
+}
+
+export function percentChange(current: number, previous: number): number | null {
+  if (previous <= 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
 export function monthKey(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
