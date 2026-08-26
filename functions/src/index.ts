@@ -1,15 +1,23 @@
 import { initializeApp } from "firebase-admin/app";
-import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import * as crypto from "crypto";
+import {
+  FREE_MONTHLY_EXPENSE_LIMIT,
+  FREE_MONTHLY_EXPORT_LIMIT,
+  PAID_PLANS,
+  hasUnlimitedUsage,
+  isValidInstallments,
+  isValidInterval,
+  subscriptionAmountFor,
+  subscriptionExpiration,
+  toMillis,
+  type BillingInterval,
+} from "./pricing";
 
 initializeApp();
 
 const db = getFirestore();
-const FREE_MONTHLY_EXPENSE_LIMIT = 30;
-const FREE_MONTHLY_EXPORT_LIMIT = 5;
-const STANDARD_MONTHLY_PRICE = 9.9;
-const SUBSCRIPTION_DAYS = 30;
 const VALID_CATEGORIES = new Set([
   "alimentacao",
   "transporte",
@@ -22,7 +30,6 @@ const VALID_CATEGORIES = new Set([
   "outros",
 ]);
 const VALID_EXPORT_FORMATS = new Set(["pdf", "png", "csv", "xlsx", "docx"]);
-const PAID_PLANS = new Set(["standard", "pro"]);
 
 interface AddExpensePayload {
   amount?: unknown;
@@ -43,6 +50,8 @@ interface RegisterExportPayload {
 interface InitSubscriptionPayload {
   plan?: unknown;
   provider?: unknown;
+  interval?: unknown;
+  installments?: unknown;
 }
 
 interface UserProfile {
@@ -115,9 +124,18 @@ function validateExportPayload(data: RegisterExportPayload) {
 }
 
 function validateSubscriptionPayload(data: InitSubscriptionPayload) {
-  const plan = data.plan === "pro" ? "pro" : data.plan === "standard" ? "standard" : null;
-  if (!plan) {
+  if (data.plan !== "pro") {
     throw new HttpsError("invalid-argument", "Plano inválido.");
+  }
+
+  if (!isValidInterval(data.interval)) {
+    throw new HttpsError("invalid-argument", "Intervalo de cobrança inválido.");
+  }
+  const interval: BillingInterval = data.interval;
+
+  const installments = data.installments === undefined ? 1 : data.installments;
+  if (!isValidInstallments(installments, interval)) {
+    throw new HttpsError("invalid-argument", "Número de parcelas inválido.");
   }
 
   const provider = typeof data.provider === "string" && data.provider.trim() ? data.provider.trim() : "manual";
@@ -125,24 +143,7 @@ function validateSubscriptionPayload(data: InitSubscriptionPayload) {
     throw new HttpsError("invalid-argument", "Provedor inválido.");
   }
 
-  return { plan, provider };
-}
-
-function toMillis(value: unknown): number | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "number") return value;
-  if (value instanceof Timestamp) return value.toMillis();
-  if (typeof value === "object" && "toMillis" in value && typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
-  return null;
-}
-
-function hasUnlimitedUsage(profile: UserProfile): boolean {
-  const plan = typeof profile.plan === "string" && PAID_PLANS.has(profile.plan) ? profile.plan : "basic";
-  const expiresAt = toMillis(profile.subscriptionExpiresAt);
-  const hasNotExpired = expiresAt === null || expiresAt > Date.now();
-  return PAID_PLANS.has(plan) && profile.subscriptionStatus === "active" && hasNotExpired;
+  return { plan: "pro" as const, provider, interval, installments: installments as number };
 }
 
 function monthKey(dateMs: number): string {
@@ -203,10 +204,6 @@ function assertWebhookSecret(request: Parameters<Parameters<typeof onRequest>[0]
   if (receivedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(receivedBuffer, expectedBuffer)) {
     throw new Error("invalid-payment-webhook-signature");
   }
-}
-
-function subscriptionExpiration(now: number): number {
-  return now + SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export const addExpense = onCall(async (request) => {
@@ -382,14 +379,17 @@ export const initSubscriptionPayment = onCall(async (request) => {
   const payload = validateSubscriptionPayload((request.data ?? {}) as InitSubscriptionPayload);
   const now = Date.now();
   const paymentRef = db.collection("paymentIntents").doc();
-  const checkoutUrl = process.env.STANDARD_CHECKOUT_URL || null;
+  const checkoutUrl =
+    (payload.interval === "annual" ? process.env.PRO_ANNUAL_CHECKOUT_URL : process.env.PRO_MONTHLY_CHECKOUT_URL) || null;
 
   await paymentRef.set({
     uid,
     plan: payload.plan,
     provider: payload.provider,
+    interval: payload.interval,
+    installments: payload.installments,
     status: checkoutUrl ? "pending" : "configuration_required",
-    amount: payload.plan === "standard" ? STANDARD_MONTHLY_PRICE : 47.9,
+    amount: subscriptionAmountFor(payload.interval),
     currency: "BRL",
     checkoutUrl,
     createdAt: now,
@@ -399,6 +399,8 @@ export const initSubscriptionPayment = onCall(async (request) => {
   return {
     paymentId: paymentRef.id,
     provider: payload.provider,
+    interval: payload.interval,
+    installments: payload.installments,
     checkoutUrl,
     status: checkoutUrl ? "pending" : "configuration_required",
   };
@@ -435,6 +437,7 @@ export const paymentWebhook = onRequest(async (request, response) => {
       if (!uid || !plan) {
         throw new Error("invalid-payment");
       }
+      const interval: BillingInterval = payment.interval === "annual" ? "annual" : "monthly";
 
       const now = Date.now();
       transaction.set(
@@ -455,9 +458,10 @@ export const paymentWebhook = onRequest(async (request, response) => {
             plan,
             subscriptionStatus: "active",
             subscriptionProvider: payment.provider ?? "manual",
-            subscriptionPrice: payment.amount ?? STANDARD_MONTHLY_PRICE,
+            subscriptionPrice: typeof payment.amount === "number" ? payment.amount : subscriptionAmountFor(interval),
             subscriptionCurrency: "BRL",
-            subscriptionExpiresAt: subscriptionExpiration(now),
+            subscriptionInterval: interval,
+            subscriptionExpiresAt: subscriptionExpiration(now, interval),
             updatedAt: now,
           },
           { merge: true }

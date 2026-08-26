@@ -2,10 +2,9 @@ import { Alert, Platform, Share } from "react-native";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../config/firebase.config";
 import { friendlyFirebaseError } from "../utils/errors";
+import { FREE_MONTHLY_EXPORT_LIMIT } from "./MonetizationService";
 
 export type ExportFormat = "pdf" | "png" | "csv" | "xlsx" | "docx";
-
-export const FREE_MONTHLY_EXPORT_LIMIT = 5;
 
 export interface ExportCategoryRow {
   name: string;
@@ -300,7 +299,7 @@ export function showExportResult(error?: unknown): void {
     return;
   }
   if (message.includes("resource-exhausted")) {
-    Alert.alert("Limite de exportações atingido", `O Plano Básico permite até ${FREE_MONTHLY_EXPORT_LIMIT} exportações por mês. Assine o Plano Standard para exportações ilimitadas.`);
+    Alert.alert("Limite de exportações atingido", `O Plano Básico permite até ${FREE_MONTHLY_EXPORT_LIMIT} exportações por mês. Assine o Plano Pro para exportações ilimitadas.`);
     return;
   }
   if (message === "popup-blocked") {

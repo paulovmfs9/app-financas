@@ -14,12 +14,14 @@ import { useTheme } from "./ThemeProvider";
 import { computeSnapshot, cycleBounds, isFixedBillActiveInPeriod, FinanceSnapshot } from "../utils/finance";
 import {
   FREE_MONTHLY_EXPENSE_LIMIT,
+  PRO_MONTHLY_PRICE,
   ExpenseLimitError,
   isUnlimitedPlan,
   LIMIT_REACHED_MESSAGE,
   openUpgradeModal as showUpgradeModal,
 } from "../services/MonetizationService";
 import { spacing, radii, fontSizes } from "../utils/theme";
+import { formatBRL } from "../utils/format";
 
 interface ExpensesCtx {
   loading: boolean;
@@ -104,7 +106,7 @@ export function ExpensesProvider({ children }: { children: React.ReactNode }) {
   const hasUnlimitedExpenses = isUnlimitedPlan(profile);
   const monthlyExpenseCount = expenses.length;
   const usageLabel = hasUnlimitedExpenses
-    ? "Plano Standard ativo - gastos ilimitados"
+    ? "Plano Pro ativo - gastos ilimitados"
     : `Plano Básico: ${monthlyExpenseCount}/${FREE_MONTHLY_EXPENSE_LIMIT} gastos`;
 
   const currentPeriod = useMemo(
@@ -258,8 +260,8 @@ function MonetizationModalView({
 
           {isUpgrade ? (
             <>
-              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Plano Standard</Text>
-              <Text style={[styles.price, { color: colors.primary }]}>R$ 9,90/mês</Text>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Plano Pro</Text>
+              <Text style={[styles.price, { color: colors.primary }]}>{formatBRL(PRO_MONTHLY_PRICE)}/mês</Text>
               <View style={styles.benefits}>
                 {[
                   "gastos ilimitados",
@@ -271,8 +273,8 @@ function MonetizationModalView({
                   <Text key={item} style={[styles.benefit, { color: colors.textPrimary }]}>- {item}</Text>
                 ))}
               </View>
-              <TouchableOpacity testID="upgrade-subscribe-button" activeOpacity={0.85} onPress={showPaymentInfo} style={[styles.primaryButton, { backgroundColor: colors.primary }]}> 
-                <Text style={styles.primaryButtonText}>Assinar Plano Standard</Text>
+              <TouchableOpacity testID="upgrade-subscribe-button" activeOpacity={0.85} onPress={showPaymentInfo} style={[styles.primaryButton, { backgroundColor: colors.primary }]}>
+                <Text style={styles.primaryButtonText}>Assinar Plano Pro</Text>
               </TouchableOpacity>
               <TouchableOpacity testID="upgrade-later-button" activeOpacity={0.75} onPress={close} style={styles.secondaryButton}> 
                 <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Agora não</Text>
