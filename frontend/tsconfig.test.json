@@ -17,6 +17,8 @@
     "src/models/User.ts",
     "src/utils/format.ts",
     "src/utils/theme.ts",
-    "src/utils/theme.test.ts"
+    "src/utils/theme.test.ts",
+    "src/utils/finance.ts",
+    "src/utils/finance.test.ts"
   ]
 }

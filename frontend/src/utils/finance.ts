@@ -60,6 +60,22 @@ export function cycleBounds(
   return buildPeriod(dateAtDay(y, startMonth, start, false), dateAtDay(y, endMonth, end, true));
 }
 
+export function previousCycleBounds(
+  currentPeriodStart: number,
+  startDay = 1,
+  endDay = 31
+): { start: number; end: number; daysInMonth: number } {
+  const period = cycleBounds(new Date(currentPeriodStart - 1), startDay, endDay);
+  const end = Math.min(period.end, currentPeriodStart - 1);
+  const daysInMonth = Math.max(1, Math.ceil((end - period.start + 1) / DAY_MS));
+  return { start: period.start, end, daysInMonth };
+}
+
+export function percentChange(current: number, previous: number): number | null {
+  if (previous <= 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
 export function monthKey(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }

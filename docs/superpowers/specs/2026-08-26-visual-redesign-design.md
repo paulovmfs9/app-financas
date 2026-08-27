@@ -74,6 +74,35 @@ Sem mockup dedicado — aplica o mesmo padrão de card/lista (dados de
 conta, seção de plano, ações) usando os componentes da Fase 1. Revisão
 manual antes de fechar a Fase 2.
 
+### Fase 2 — resolvido (decisões tomadas durante a implementação)
+
+- **Início tinha mais funcionalidade do que o mockup cobria.** A tela
+  real já tinha um grid de 4 métricas (Gastos no mês, Limite por dia,
+  Média diária, Projeção mensal) e um box de alerta inteligente
+  (`snapshot.alert`, 4 níveis) — nenhum dos dois estava no mockup. Os
+  dois foram **mantidos**, reestilizados em cima do `Card` do kit, por
+  serem funcionalidades reais e já valiosas, não elementos decorativos.
+- **Painel inline de contas fixas removido de Início** — duplicava
+  integralmente a tela dedicada `/fixed-bills` (mesmos campos, mesmo
+  `addFixedBill`/`deleteFixedBill`). A ação rápida "Contas" agora
+  navega pra lá.
+- **FAB removido de Início** — a ação rápida "Gasto" cobre a mesma
+  função (`router.push("/add-expense")`).
+- **Selo de variação percentual compara gastos, não saldo** —
+  `percentChange(snapshot.total_spent, totalDoCicloAnterior)`, per a
+  nota técnica abaixo. Confirmado revisitando o texto da spec durante o
+  planejamento da Fase 2.
+- **`ExportModal`**: o brief original da Fase 2 justificou um tamanho
+  de ícone (40/20) alegando "igual ao `iconWrap` do `ListRow`" — isso
+  está **errado**, o `iconWrap` do `ListRow` é 32/16. A implementação
+  seguiu os números literais do brief (40/20), então o `ExportModal`
+  fica com círculos de ícone maiores que o `ListRow`, não
+  visualmente alinhado como a intenção original dizia. Decisão: manter
+  40/20 como um tamanho deliberado e específico do modal (não uma
+  cópia do `ListRow`), já que mudar agora seria puramente cosmético e
+  de baixo valor — mas registrar aqui pra Fase 3 não repetir a alegação
+  errada.
+
 ### Padrão de formulário (Adicionar Gasto e similares)
 
 - Corpo rolável com campos (`TextField`, `ChipGroup` para categoria,
@@ -105,6 +134,16 @@ track do `ChipGroup`/`SegmentedControl`) devem ficar direto sobre
 precisar aninhar, use um fill com mais contraste (ex. `ListRow` aceita
 `iconBg?: string`, com default `primarySoft`, para ficar visível dentro
 de cards — ver Fase 1, Fix 4 da revisão final).
+
+**Extensão da regra (achado na revisão final da Fase 2):** `TextField`
+também usa `colors.surface` como fill — aninhado dentro de um `Card`
+(mesmo fill), fica só a borda de 1.5px pra separar visualmente. Hoje
+isso é cosmético (a borda ainda funciona), mas é a mesma família de
+problema do `SegmentedControl`/`ChipGroup`. A Fase 3 vai aninhar muitos
+mais `TextField`s dentro de `Card`s (Adicionar Gasto, Contas Fixas,
+Onboarding, telas de auth) — vale decidir antes de multiplicar o
+padrão: manter a borda como diferenciador suficiente, ou dar ao
+`TextField` um fill com mais contraste que `surface`.
 
 Cards de destaque (ex. o card de gráfico do Resumo) se diferenciam da
 página com **borda**, não sombra — ver decisão de sombras abaixo.
@@ -153,12 +192,14 @@ variantes) para verificação visual manual — removida antes de ir para
 produção ou mantida como storybook simples, a decidir na hora. Nenhuma
 tela real é tocada nesta fase.
 
-**Fase 2 — Início, Resumo, Perfil**
+**Fase 2 — Início, Resumo, Perfil (concluída)**
 Reconstrói as 3 telas mais usadas em cima do kit da Fase 1, seguindo o
 desenho acima. Inclui o cálculo novo de variação percentual (ver nota
 técnica abaixo) e o restyle do `ExportModal` (único componente
 compartilhado hoje, usado só pela tela Resumo) para não destoar da
-tela ao redor.
+tela ao redor. Ver "Fase 2 — resolvido" acima pras decisões tomadas
+durante a implementação (painel de contas fixas removido, FAB
+removido, etc.).
 
 **Fase 3 — telas restantes**
 Login, Registro, Esqueci senha, Onboarding, Adicionar Gasto, Contas
@@ -196,11 +237,19 @@ Não há testing-library de componentes no projeto (só `node:test` para
 funções puras, usado no trabalho de planos). Para este redesign:
 
 - `npx tsc --noEmit` limpo a cada fase.
+- `eslint` limpo a cada fase (`./node_modules/.bin/eslint <arquivos> --max-warnings=0`)
+  — **adicionado depois da Fase 2**: a Fase 1 e o plano original da
+  Fase 2 só rodavam `tsc`/`npm test` por task, e um erro real de lint
+  (`react/no-unescaped-entities`) só foi pego na revisão final, não em
+  nenhuma task individual. Fase 3 deve rodar lint a cada task, não só
+  no fim.
 - Verificação visual manual via `npx expo start --web`, telas em light
-  e dark mode.
-- Se a Fase 2 introduzir lógica pura nova (cálculo de variação
-  percentual), essa função ganha teste unitário via `node:test`,
-  seguindo o padrão já usado em `MonetizationService.test.ts`.
+  e dark mode. Telas atrás do `Gate` de autenticação (tudo exceto
+  `/dev-ui-kit`) exigem login real ou um bypass temporário
+  não-commitado do `Gate`, revertido logo depois — ver Fase 2, Task 8.
+- Se uma fase introduzir lógica pura nova, essa função ganha teste
+  unitário via `node:test`, seguindo o padrão já usado em
+  `MonetizationService.test.ts`.
 
 ## Fora de escopo
 

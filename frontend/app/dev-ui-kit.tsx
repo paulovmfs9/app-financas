@@ -33,14 +33,14 @@ const PERIOD_OPTIONS: SegmentOption[] = [
 ];
 
 export default function DevUiKitScreen() {
-  if (!__DEV__) {
-    return <Redirect href="/(tabs)" />;
-  }
-
   const { colors } = useTheme();
   const [category, setCategory] = useState("food");
   const [period, setPeriod] = useState("month");
   const [recurring, setRecurring] = useState(true);
+
+  if (!__DEV__) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>

@@ -45,6 +45,21 @@ export const ExpenseRepository = {
     return snap.size;
   },
 
+  async sumMonth(uid: string, startMs: number, endMs: number): Promise<number> {
+    const q = query(
+      colRef(uid),
+      where("date", ">=", startMs),
+      where("date", "<=", endMs)
+    );
+    const snap = await getDocs(q);
+    let total = 0;
+    snap.forEach((doc) => {
+      const amount = doc.data().amount;
+      if (typeof amount === "number") total += amount;
+    });
+    return total;
+  },
+
   /**
    * Live subscription to a month's expenses (ordered by date desc).
    * Returns an unsubscribe function.
