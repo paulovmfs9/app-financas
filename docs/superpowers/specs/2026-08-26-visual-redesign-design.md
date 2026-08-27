@@ -1,7 +1,7 @@
 # Redesign visual do Saldo
 
 Data: 2026-08-26
-Status: aprovado para implementação (aguardando plano de execução)
+Status: implementado (Fases 1, 2 e 3 concluídas)
 
 ## Contexto
 
@@ -103,6 +103,53 @@ manual antes de fechar a Fase 2.
   de baixo valor — mas registrar aqui pra Fase 3 não repetir a alegação
   errada.
 
+### Fase 3 — resolvido (decisões tomadas durante a implementação)
+
+- **`ScreenFooter` precisa ficar DENTRO do `KeyboardAvoidingView`, não ao
+  lado.** As 6 telas de formulário (Login, Registro, Esqueci senha,
+  Onboarding, Adicionar Gasto, Contas Fixas) inicialmente saíram da
+  Fase 3 com `<ScreenFooter>` como irmão **depois** do
+  `</KeyboardAvoidingView>` fechar — mesma estrutura usada desde a Fase
+  2 no `ExportModal`/telas de Início/Resumo, que não têm CTA fixo
+  sensível a teclado. No iOS, `behavior="padding"` só empurra a própria
+  subárvore do `KeyboardAvoidingView`; um `ScreenFooter` irmão (com o
+  CTA primário da tela) podia ficar escondido atrás do teclado com um
+  campo focado — defeito que a QA visual via Playwright/web não
+  conseguia detectar (web não tem teclado nativo sobrepondo a UI).
+  Corrigido na revisão final: `ScreenFooter` passou a ser filho do
+  `KeyboardAvoidingView`, irmão do `ScrollView`, posicionado depois do
+  `</ScrollView>` fechar. Como consequência, cada `ScrollView` também
+  ganhou `style={{ flex: 1 }}` explícito (antes ausente, só
+  `contentContainerStyle`) — necessário porque `ScrollView` deixou de
+  ser o único filho do `KeyboardAvoidingView` (`flex: 1`) e precisa
+  dividir a altura corretamente com o novo irmão `ScreenFooter`. Este
+  padrão (`ScreenFooter` sempre dentro do `KeyboardAvoidingView`) deve
+  ser seguido em qualquer tela de formulário futura.
+- **`Button` variante `ghost` não passava no contraste WCAG AA.** Usava
+  `colors.textMuted`; trocado para `colors.textSecondary` (4.76:1 no
+  modo claro, 7.4:1 no escuro — ambos acima do mínimo 4.5:1 pra texto
+  normal). Vale pra todo uso de `ghost` no app, não só Fase 3.
+- **`plans.tsx`: opções do `SegmentedControl` de intervalo (Mensal/Anual)
+  agora derivadas por plano**, não de uma constante única no escopo do
+  módulo — evita acoplar a UI a uma suposição não garantida de que
+  todo `PlanDefinition` tem exatamente os mesmos `BillingInterval`s.
+  `PlanCard` também trocou `colors: any` por `colors: Colors`
+  (tipo já exportado por `theme.ts`).
+- **Contas Fixas: estado vazio da lista trocado pro `Card` do kit**
+  (antes era um `View` com borda/fundo escritos à mão, duplicando o
+  que `Card` já faz).
+- **Adiado, não corrigido:** a linha de alternância de modo
+  (Mensal/Parcelada) em Contas Fixas continua com botões cheios lado a
+  lado escritos à mão, em vez de um `SegmentedControl` do kit —
+  decisão de design real (largura total dos botões vs. pill
+  compacto), não um bug. Fica pra uma iteração visual futura, seguindo
+  o mesmo precedente do tamanho de ícone do `ExportModal` na Fase 2
+  (ver acima): registrado aqui em vez de corrigido silenciosamente.
+- **`ChipGroup`: chip selecionado não muda mais de tamanho.** O estilo
+  base ganhou `borderWidth: 1, borderColor: "transparent"` sempre
+  presente; antes, `borderWidth` só aparecia condicionalmente quando
+  selecionado+colorido, crescendo o chip em 2px nesse estado.
+
 ### Padrão de formulário (Adicionar Gasto e similares)
 
 - Corpo rolável com campos (`TextField`, `ChipGroup` para categoria,
@@ -201,10 +248,13 @@ tela ao redor. Ver "Fase 2 — resolvido" acima pras decisões tomadas
 durante a implementação (painel de contas fixas removido, FAB
 removido, etc.).
 
-**Fase 3 — telas restantes**
+**Fase 3 — telas restantes (concluída)**
 Login, Registro, Esqueci senha, Onboarding, Adicionar Gasto, Contas
 Fixas, Planos (`plans.tsx`, já reestruturado no trabalho anterior —
-só herda o visual, sem mudar a lógica de planos).
+só herda o visual, sem mudar a lógica de planos). Ver "Fase 3 —
+resolvido" acima pras decisões tomadas durante a implementação
+(correção do `ScreenFooter`/`KeyboardAvoidingView`, contraste do
+`Button` ghost, etc.).
 
 Cada fase é implementada, verificada manualmente (`npx expo start
 --web` + revisão visual) e commitada separadamente antes de avançar
