@@ -39,7 +39,7 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
             style={[
               styles.chip,
               { backgroundColor: bg },
-              selected && tint ? { borderWidth: 1, borderColor: tint } : null,
+              selected && tint ? { borderColor: tint } : null,
             ]}
           >
             {opt.icon}
@@ -53,6 +53,6 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 8 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1, borderColor: "transparent" },
   text: { fontSize: fontSizes.small, fontWeight: "700" },
 });

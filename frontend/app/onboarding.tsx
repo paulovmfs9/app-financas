@@ -37,7 +37,7 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Text style={[styles.greeting, { color: colors.textSecondary }]}>
             Olá, {profile?.name?.split(" ")[0] || "tudo bem"}
           </Text>
@@ -70,13 +70,13 @@ export default function OnboardingScreen() {
             onChangeText={setBills}
           />
 
-          {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
+          {error ? <Text testID="onboarding-error" style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <ScreenFooter>
-        <Button testID="onboarding-continue-button" label="Continuar" onPress={onSubmit} loading={loading} variant="primary" />
-      </ScreenFooter>
+        <ScreenFooter>
+          <Button testID="onboarding-continue-button" label="Continuar" onPress={onSubmit} loading={loading} variant="primary" />
+        </ScreenFooter>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -86,7 +86,7 @@ export default function AddExpenseScreen() {
           <View style={{ width: 28 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.amountWrap}>
             <Text style={[styles.amountPrefix, { color: colors.textMuted }]}>R$</Text>
             <TextInput
@@ -120,11 +120,11 @@ export default function AddExpenseScreen() {
             }}
           />
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <ScreenFooter>
-        <Button testID="add-expense-save" label="Salvar gasto" onPress={onSave} loading={saving} variant="primary" />
-      </ScreenFooter>
+        <ScreenFooter>
+          <Button testID="add-expense-save" label="Salvar gasto" onPress={onSave} loading={saving} variant="primary" />
+        </ScreenFooter>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

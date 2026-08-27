@@ -87,7 +87,7 @@ export default function ForgotPasswordScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brandWrap}>
             <View style={[styles.dot, { backgroundColor: colors.primary }]} />
             <Text style={[styles.brand, { color: colors.textPrimary }]}>Saldo</Text>
@@ -151,26 +151,26 @@ export default function ForgotPasswordScreen() {
           {message ? <Text testID="forgot-message" style={[styles.message, { color: colors.success }]}>{message}</Text> : null}
           {error ? <Text testID="forgot-error" style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <ScreenFooter>
-        <Button
-          testID={step === "email" ? "forgot-send-code-button" : "forgot-reset-button"}
-          label={step === "email" ? "Enviar código" : "Criar nova senha"}
-          onPress={step === "email" ? onSendCode : onResetPassword}
-          loading={loading}
-          variant="primary"
-        />
-        {step === "code" ? (
-          <Button testID="forgot-resend-button" label="Reenviar email" onPress={onSendCode} variant="ghost" disabled={loading} />
-        ) : null}
-        <Button
-          testID="forgot-go-login"
-          label="Voltar para entrar"
-          onPress={() => router.push("/(auth)/login" as any)}
-          variant="ghost"
-        />
-      </ScreenFooter>
+        <ScreenFooter>
+          <Button
+            testID={step === "email" ? "forgot-send-code-button" : "forgot-reset-button"}
+            label={step === "email" ? "Enviar código" : "Criar nova senha"}
+            onPress={step === "email" ? onSendCode : onResetPassword}
+            loading={loading}
+            variant="primary"
+          />
+          {step === "code" ? (
+            <Button testID="forgot-resend-button" label="Reenviar email" onPress={onSendCode} variant="ghost" disabled={loading} />
+          ) : null}
+          <Button
+            testID="forgot-go-login"
+            label="Voltar para entrar"
+            onPress={() => router.push("/(auth)/login")}
+            variant="ghost"
+          />
+        </ScreenFooter>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

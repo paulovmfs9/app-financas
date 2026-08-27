@@ -112,7 +112,7 @@ export default function FixedBillsScreen() {
           <View style={styles.iconButton} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Card>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total fixo mensal</Text>
             <Text testID="fixed-bills-total" style={[styles.summaryValue, { color: colors.textPrimary }]}>{formatBRL(fixedBillsTotal)}</Text>
@@ -184,9 +184,9 @@ export default function FixedBillsScreen() {
 
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Cadastradas</Text>
           {activeBills.length === 0 ? (
-            <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Card padding={spacing.lg}>
               <Text style={{ color: colors.textSecondary, textAlign: "center" }}>Nenhuma conta fixa ativa para este período.</Text>
-            </View>
+            </Card>
           ) : (
             <Card>
               {activeBills.map((bill, index) => (
@@ -221,17 +221,17 @@ export default function FixedBillsScreen() {
             </Card>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <ScreenFooter>
-        <Button
-          testID="fixed-bill-save-button"
-          label={billMode === "installment" ? "Salvar compra parcelada" : "Salvar conta fixa"}
-          onPress={onSave}
-          loading={saving}
-          variant="primary"
-        />
-      </ScreenFooter>
+        <ScreenFooter>
+          <Button
+            testID="fixed-bill-save-button"
+            label={billMode === "installment" ? "Salvar compra parcelada" : "Salvar conta fixa"}
+            onPress={onSave}
+            loading={saving}
+            variant="primary"
+          />
+        </ScreenFooter>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
   formRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.base },
   dayWrap: { width: 104 },
   installmentsWrap: { marginTop: spacing.base },
-  emptyBox: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.lg, alignItems: "center" },
   billRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   billRowDivider: { borderTopWidth: 1, marginTop: spacing.xs, paddingTop: spacing.xs },
   deleteButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },

@@ -46,7 +46,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brandWrap}>
             <View style={[styles.dot, { backgroundColor: colors.primary }]} />
             <Text style={[styles.brand, { color: colors.textPrimary }]}>Saldo</Text>
@@ -91,23 +91,23 @@ export default function RegisterScreen() {
             <Text testID="register-error" style={[styles.error, { color: colors.danger }]}>{error}</Text>
           ) : null}
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <ScreenFooter>
-        <Button testID="register-submit-button" label="Criar conta" onPress={onSubmit} loading={loading} variant="primary" />
-        <Button
-          testID="register-forgot-password"
-          label="Esqueci minha senha"
-          onPress={() => router.push("/(auth)/forgot-password" as any)}
-          variant="ghost"
-        />
-        <Button
-          testID="register-go-login"
-          label="Já tem uma conta? Entrar"
-          onPress={() => router.push("/(auth)/login" as any)}
-          variant="ghost"
-        />
-      </ScreenFooter>
+        <ScreenFooter>
+          <Button testID="register-submit-button" label="Criar conta" onPress={onSubmit} loading={loading} variant="primary" />
+          <Button
+            testID="register-forgot-password"
+            label="Esqueci minha senha"
+            onPress={() => router.push("/(auth)/forgot-password")}
+            variant="ghost"
+          />
+          <Button
+            testID="register-go-login"
+            label="Já tem uma conta? Entrar"
+            onPress={() => router.push("/(auth)/login")}
+            variant="ghost"
+          />
+        </ScreenFooter>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

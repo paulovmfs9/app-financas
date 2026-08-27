@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { useAuth } from "../src/providers/AuthProvider";
-import { spacing, fontSizes } from "../src/utils/theme";
+import { spacing, fontSizes, type Colors } from "../src/utils/theme";
 import {
   PLAN_DEFINITIONS,
   annualSavingsPercent,
@@ -18,11 +18,6 @@ import {
 import { initSubscriptionPayment } from "../src/services/PaymentService";
 import { friendlyFirebaseError } from "../src/utils/errors";
 import { Card, Badge, Button, SegmentedControl, type SegmentOption } from "../src/components/ui";
-
-const INTERVAL_OPTIONS: SegmentOption[] = [
-  { id: "monthly", label: "Mensal" },
-  { id: "annual", label: "Anual" },
-];
 
 export default function PlansScreen() {
   const { colors } = useTheme();
@@ -99,13 +94,17 @@ function PlanCard({
 }: {
   plan: PlanDefinition;
   active: boolean;
-  colors: any;
+  colors: Colors;
   onPress: (price: PlanPrice) => void;
   loading?: boolean;
   interval: BillingInterval;
   onIntervalChange: (interval: BillingInterval) => void;
 }) {
   const hasMultiplePrices = plan.prices.length > 1;
+  const intervalOptions: SegmentOption[] = plan.prices.map((p) => ({
+    id: p.interval,
+    label: p.interval === "monthly" ? "Mensal" : "Anual",
+  }));
   const price = hasMultiplePrices ? plan.prices.find((p) => p.interval === interval) ?? plan.prices[0] : plan.prices[0];
   const isAnnual = price.interval === "annual";
 
@@ -119,7 +118,7 @@ function PlanCard({
         <View style={styles.intervalToggleWrap}>
           <SegmentedControl
             testID={`plan-interval-${plan.key}`}
-            options={INTERVAL_OPTIONS}
+            options={intervalOptions}
             selectedId={interval}
             onSelect={(id) => onIntervalChange(id as BillingInterval)}
           />
