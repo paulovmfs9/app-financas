@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
   Alert,
   Keyboard,
 } from "react-native";
@@ -17,11 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../src/providers/ThemeProvider";
 import { useExpenses } from "../src/providers/ExpensesProvider";
-import { spacing, radii, fontSizes } from "../src/utils/theme";
+import { spacing, fontSizes } from "../src/utils/theme";
 import { parseBRL } from "../src/utils/format";
 import { friendlyFirebaseError } from "../src/utils/errors";
 import { CATEGORIES, suggestCategory } from "../src/models/Category";
 import { isExpenseLimitError } from "../src/services/MonetizationService";
+import { TextField, ChipGroup, ScreenFooter, Button, type ChipOption } from "../src/components/ui";
 
 export default function AddExpenseScreen() {
   const { colors } = useTheme();
@@ -40,6 +40,13 @@ export default function AddExpenseScreen() {
     const t = setTimeout(() => setSelected(suggestCategory(description)), 250);
     return () => clearTimeout(t);
   }, [description, autoMode]);
+
+  const categoryOptions: ChipOption[] = CATEGORIES.map((c) => ({
+    id: c.id,
+    label: c.name,
+    color: c.color,
+    icon: <Ionicons name={c.icon as any} size={14} color={c.color} />,
+  }));
 
   const onSave = async () => {
     if (saving) return;
@@ -69,7 +76,7 @@ export default function AddExpenseScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity testID="add-expense-close" onPress={() => router.back()}>
@@ -94,54 +101,30 @@ export default function AddExpenseScreen() {
             />
           </View>
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Descrição (opcional)</Text>
-          <TextInput
+          <TextField
             testID="add-expense-description"
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+            label="Descrição (opcional)"
             placeholder="Ex: Almoço no restaurante"
-            placeholderTextColor={colors.textMuted}
             value={description}
             onChangeText={setDescription}
           />
 
           <Text style={[styles.label, { color: colors.textSecondary, marginTop: spacing.lg }]}>Categoria</Text>
-          <View style={styles.chips}>
-            {CATEGORIES.map((c) => {
-              const active = selected === c.id;
-              return (
-                <TouchableOpacity
-                  key={c.id}
-                  testID={`category-chip-${c.id}`}
-                  onPress={() => {
-                    setSelected(c.id);
-                    setAutoMode(false);
-                  }}
-                  style={[
-                    styles.chip,
-                    { backgroundColor: active ? c.color + "22" : colors.surface, borderColor: active ? c.color : colors.border },
-                  ]}
-                >
-                  <Ionicons name={c.icon as any} size={14} color={active ? c.color : colors.textSecondary} />
-                  <Text style={{ color: active ? c.color : colors.textPrimary, fontWeight: "600", fontSize: fontSizes.small }}>
-                    {c.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <ChipGroup
+            testID="category-chip"
+            options={categoryOptions}
+            selectedId={selected}
+            onSelect={(id) => {
+              setSelected(id);
+              setAutoMode(false);
+            }}
+          />
         </ScrollView>
-
-        <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
-          <TouchableOpacity
-            testID="add-expense-save"
-            disabled={saving}
-            onPress={onSave}
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
-          >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Salvar gasto</Text>}
-          </TouchableOpacity>
-        </View>
       </KeyboardAvoidingView>
+
+      <ScreenFooter>
+        <Button testID="add-expense-save" label="Salvar gasto" onPress={onSave} loading={saving} variant="primary" />
+      </ScreenFooter>
     </SafeAreaView>
   );
 }
@@ -155,10 +138,4 @@ const styles = StyleSheet.create({
   amountPrefix: { fontSize: 28, fontWeight: "700", marginRight: 6 },
   amountInput: { fontSize: 56, fontWeight: "800", letterSpacing: -2, minWidth: 120, textAlign: "center" },
   label: { fontSize: fontSizes.small, fontWeight: "600", marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 14, fontSize: fontSizes.body },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1 },
-  footer: { padding: spacing.xl, borderTopWidth: 1 },
-  primaryBtn: { paddingVertical: 18, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
-  primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
 });
