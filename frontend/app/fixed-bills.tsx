@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -8,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -21,6 +19,7 @@ import { formatBRL, parseBRL } from "../src/utils/format";
 import { installmentEndDate, isFixedBillActiveInPeriod } from "../src/utils/finance";
 import { spacing, radii, fontSizes } from "../src/utils/theme";
 import { friendlyFirebaseError } from "../src/utils/errors";
+import { Card, TextField, Button, ScreenFooter, ListRow } from "../src/components/ui";
 
 export default function FixedBillsScreen() {
   const { colors } = useTheme();
@@ -103,9 +102,9 @@ export default function FixedBillsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}> 
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity testID="fixed-bills-back-button" onPress={() => router.back()} style={styles.iconButton}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -114,11 +113,11 @@ export default function FixedBillsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={[styles.summary, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+          <Card>
             <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total fixo mensal</Text>
             <Text testID="fixed-bills-total" style={[styles.summaryValue, { color: colors.textPrimary }]}>{formatBRL(fixedBillsTotal)}</Text>
             <Text style={[styles.summarySub, { color: colors.textMuted }]}>{activeBills.length} conta{activeBills.length === 1 ? "" : "s"} ativa{activeBills.length === 1 ? "" : "s"}</Text>
-          </View>
+          </Card>
 
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Adicionar conta</Text>
           <View style={styles.modeRow}>
@@ -132,43 +131,36 @@ export default function FixedBillsScreen() {
                   onPress={() => setBillMode(mode)}
                   style={[styles.modeButton, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
                 >
-                  <Text style={[styles.modeButtonText, { color: active ? "#fff" : colors.textPrimary }]}>{mode === "monthly" ? "Mensal" : "Parcelada"}</Text>
+                  <Text style={[styles.modeButtonText, { color: active ? colors.onPrimary : colors.textPrimary }]}>{mode === "monthly" ? "Mensal" : "Parcelada"}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Nome</Text>
-          <TextInput
+          <TextField
             testID="fixed-bill-name-input"
-            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+            label="Nome"
             placeholder="Ex: Aluguel, internet, energia"
-            placeholderTextColor={colors.textMuted}
             value={name}
             onChangeText={setName}
           />
 
           <View style={styles.formRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Valor</Text>
-              <View style={[styles.moneyInput, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-                <Text style={[styles.prefix, { color: colors.textMuted }]}>R$</Text>
-                <TextInput
-                  testID="fixed-bill-amount-input"
-                  style={[styles.moneyField, { color: colors.textPrimary }]}
-                  placeholder="0,00"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="decimal-pad"
-                  value={amount}
-                  onChangeText={setAmount}
-                />
-              </View>
+              <TextField
+                testID="fixed-bill-amount-input"
+                label="Valor"
+                prefix="R$"
+                placeholder="0,00"
+                keyboardType="decimal-pad"
+                value={amount}
+                onChangeText={setAmount}
+              />
             </View>
             <View style={styles.dayWrap}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Vence dia</Text>
-              <TextInput
+              <TextField
                 testID="fixed-bill-due-day-input"
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+                label="Vence dia"
                 keyboardType="number-pad"
                 maxLength={2}
                 value={dueDay}
@@ -179,10 +171,9 @@ export default function FixedBillsScreen() {
 
           {billMode === "installment" ? (
             <View style={styles.installmentsWrap}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Quantidade de parcelas</Text>
-              <TextInput
+              <TextField
                 testID="fixed-bill-installments-input"
-                style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+                label="Quantidade de parcelas"
                 keyboardType="number-pad"
                 maxLength={3}
                 value={installments}
@@ -191,46 +182,56 @@ export default function FixedBillsScreen() {
             </View>
           ) : null}
 
-          <TouchableOpacity
-            testID="fixed-bill-save-button"
-            activeOpacity={0.85}
-            disabled={saving}
-            onPress={onSave}
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
-          >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{billMode === "installment" ? "Salvar compra parcelada" : "Salvar conta fixa"}</Text>}
-          </TouchableOpacity>
-
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Cadastradas</Text>
           {activeBills.length === 0 ? (
-            <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+            <View style={[styles.emptyBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={{ color: colors.textSecondary, textAlign: "center" }}>Nenhuma conta fixa ativa para este período.</Text>
             </View>
           ) : (
-            activeBills.map((bill) => (
-              <View key={bill.id} style={[styles.billRow, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-                <View style={[styles.billIcon, { backgroundColor: colors.primarySoft }]}> 
-                  <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.billName, { color: colors.textPrimary }]} numberOfLines={1}>{bill.name}</Text>
-                  <Text style={[styles.billSub, { color: colors.textMuted }]}>{bill.installment_count ? `${bill.installment_count}x até ${formatShortDate(bill.installment_end_date)} - dia ${bill.due_day}` : `Todo mês no dia ${bill.due_day}`}</Text>
-                </View>
-                <Text style={[styles.billAmount, { color: colors.textPrimary }]}>{formatBRL(bill.amount)}</Text>
-                <TouchableOpacity
-                  testID={`fixed-bill-delete-${bill.id}`}
-                  activeOpacity={0.75}
-                  disabled={deletingId === bill.id}
-                  onPress={() => onDelete(bill.id)}
-                  style={[styles.deleteButton, { backgroundColor: colors.danger + "14" }]}
+            <Card>
+              {activeBills.map((bill, index) => (
+                <View
+                  key={bill.id}
+                  style={[
+                    styles.billRow,
+                    index > 0 ? [styles.billRowDivider, { borderTopColor: colors.border }] : null,
+                  ]}
                 >
-                  {deletingId === bill.id ? <ActivityIndicator size="small" color={colors.danger} /> : <Ionicons name="trash-outline" size={18} color={colors.danger} />}
-                </TouchableOpacity>
-              </View>
-            ))
+                  <View style={{ flex: 1 }}>
+                    <ListRow
+                      icon={<Ionicons name="calendar-outline" size={18} color={colors.primary} />}
+                      iconBg={colors.primarySoft}
+                      title={bill.name}
+                      subtitle={bill.installment_count ? `${bill.installment_count}x até ${formatShortDate(bill.installment_end_date)} - dia ${bill.due_day}` : `Todo mês no dia ${bill.due_day}`}
+                      value={formatBRL(bill.amount)}
+                      testID={`fixed-bill-row-${bill.id}`}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    testID={`fixed-bill-delete-${bill.id}`}
+                    activeOpacity={0.75}
+                    disabled={deletingId === bill.id}
+                    onPress={() => onDelete(bill.id)}
+                    style={[styles.deleteButton, { backgroundColor: colors.danger + "14" }]}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </Card>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ScreenFooter>
+        <Button
+          testID="fixed-bill-save-button"
+          label={billMode === "installment" ? "Salvar compra parcelada" : "Salvar conta fixa"}
+          onPress={onSave}
+          loading={saving}
+          variant="primary"
+        />
+      </ScreenFooter>
     </SafeAreaView>
   );
 }
@@ -246,29 +247,18 @@ const styles = StyleSheet.create({
   iconButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: fontSizes.body, fontWeight: "800" },
   scroll: { padding: spacing.xl, paddingBottom: spacing.xxxl },
-  summary: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.lg, marginBottom: spacing.xxl },
   summaryLabel: { fontSize: fontSizes.small, fontWeight: "700" },
   summaryValue: { fontSize: 36, fontWeight: "900", marginTop: 4 },
   summarySub: { fontSize: fontSizes.small, marginTop: 4 },
-  sectionTitle: { fontSize: fontSizes.h3, fontWeight: "800", marginBottom: spacing.base, marginTop: spacing.lg },
+  sectionTitle: { fontSize: fontSizes.h3, fontWeight: "800", marginBottom: spacing.base, marginTop: spacing.xxl },
   modeRow: { flexDirection: "row", gap: spacing.sm, marginBottom: spacing.base },
   modeButton: { flex: 1, borderWidth: 1, borderRadius: radii.lg, paddingVertical: 12, alignItems: "center" },
   modeButtonText: { fontSize: fontSizes.small, fontWeight: "800" },
-  label: { fontSize: fontSizes.small, fontWeight: "700", marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 14, fontSize: fontSizes.body },
   formRow: { flexDirection: "row", gap: spacing.md, marginTop: spacing.base },
   dayWrap: { width: 104 },
-  moneyInput: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base },
-  prefix: { fontSize: fontSizes.body, marginRight: 6, fontWeight: "700" },
-  moneyField: { flex: 1, paddingVertical: 14, fontSize: fontSizes.body },
   installmentsWrap: { marginTop: spacing.base },
-  primaryBtn: { marginTop: spacing.base, paddingVertical: 16, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
-  primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "800" },
   emptyBox: { borderWidth: 1, borderRadius: radii.lg, padding: spacing.lg, alignItems: "center" },
-  billRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.base, borderRadius: radii.lg, borderWidth: 1, marginBottom: spacing.sm },
-  billIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  billName: { fontSize: fontSizes.body, fontWeight: "800" },
-  billSub: { fontSize: fontSizes.micro, marginTop: 2 },
-  billAmount: { fontSize: fontSizes.small, fontWeight: "800" },
+  billRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  billRowDivider: { borderTopWidth: 1, marginTop: spacing.xs, paddingTop: spacing.xs },
   deleteButton: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
 });
