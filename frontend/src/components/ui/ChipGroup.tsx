@@ -6,6 +6,8 @@ import { radii, spacing, fontSizes } from "../../utils/theme";
 export interface ChipOption {
   id: string;
   label: string;
+  icon?: React.ReactNode;
+  color?: string;
 }
 
 export interface ChipGroupProps {
@@ -23,6 +25,9 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
     <View style={styles.row} testID={testID}>
       {options.map((opt) => {
         const selected = opt.id === selectedId;
+        const tint = opt.color;
+        const bg = selected ? (tint ? tint + "22" : colors.primary) : colors.surfaceAlt;
+        const fg = selected ? (tint ?? colors.onPrimary) : colors.textSecondary;
         return (
           <TouchableOpacity
             key={opt.id}
@@ -31,9 +36,14 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
             activeOpacity={0.8}
             onPress={() => onSelect(opt.id)}
             testID={testID ? `${testID}-${opt.id}` : undefined}
-            style={[styles.chip, { backgroundColor: selected ? colors.primary : colors.surfaceAlt }]}
+            style={[
+              styles.chip,
+              { backgroundColor: bg },
+              selected && tint ? { borderColor: tint } : null,
+            ]}
           >
-            <Text style={[styles.text, { color: selected ? colors.onPrimary : colors.textSecondary }]}>{opt.label}</Text>
+            {opt.icon}
+            <Text style={[styles.text, { color: fg }]}>{opt.label}</Text>
           </TouchableOpacity>
         );
       })}
@@ -43,6 +53,6 @@ export function ChipGroup({ options, selectedId, onSelect, testID }: ChipGroupPr
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 8 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 8, borderWidth: 1, borderColor: "transparent" },
   text: { fontSize: fontSizes.small, fontWeight: "700" },
 });

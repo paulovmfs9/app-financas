@@ -26,7 +26,7 @@ export function Button({ label, onPress, variant = "primary", disabled, loading,
       ? { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.primary }
       : { backgroundColor: "transparent" };
 
-  const textColor = variant === "primary" ? colors.onPrimary : variant === "secondary" ? colors.primary : colors.textMuted;
+  const textColor = variant === "primary" ? colors.onPrimary : variant === "secondary" ? colors.primary : colors.textSecondary;
 
   return (
     <TouchableOpacity

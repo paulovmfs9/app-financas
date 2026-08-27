@@ -1,22 +1,13 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { Link, useRouter } from "expo-router";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { friendlyAuthError } from "../../src/services/AuthService";
-import { spacing, radii, fontSizes } from "../../src/utils/theme";
+import { spacing, fontSizes } from "../../src/utils/theme";
 import { isEmail, isStrongEnoughPassword } from "../../src/utils/validation";
+import { TextField, Button, ScreenFooter } from "../../src/components/ui";
 
 export default function LoginScreen() {
   const { colors } = useTheme();
@@ -49,9 +40,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brandWrap}>
             <View style={[styles.dot, { backgroundColor: colors.primary }]} />
             <Text style={[styles.brand, { color: colors.textPrimary }]}>Saldo</Text>
@@ -63,12 +54,10 @@ export default function LoginScreen() {
 
           <View style={{ height: spacing.xxl }} />
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
-          <TextInput
+          <TextField
             testID="login-email-input"
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+            label="Email"
             placeholder="voce@email.com"
-            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
@@ -77,12 +66,10 @@ export default function LoginScreen() {
           />
 
           <View style={{ height: spacing.base }} />
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Senha</Text>
-          <TextInput
+          <TextField
             testID="login-password-input"
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+            label="Senha"
             placeholder="••••••••"
-            placeholderTextColor={colors.textMuted}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -91,32 +78,23 @@ export default function LoginScreen() {
           {error ? (
             <Text testID="login-error" style={[styles.error, { color: colors.danger }]}>{error}</Text>
           ) : null}
-
-          <TouchableOpacity
-            testID="login-submit-button"
-            activeOpacity={0.85}
-            disabled={loading}
-            onPress={onSubmit}
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Entrar</Text>}
-          </TouchableOpacity>
-
-          <Link href="./forgot-password" asChild>
-            <TouchableOpacity testID="login-forgot-password" style={styles.forgotBtn}>
-              <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Esqueci minha senha</Text>
-            </TouchableOpacity>
-          </Link>
-
-          <View style={styles.footer}>
-            <Text style={{ color: colors.textSecondary, fontSize: fontSizes.body }}>Não tem conta? </Text>
-            <Link href="/(auth)/register" asChild>
-              <TouchableOpacity testID="login-go-register">
-                <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Criar conta</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
         </ScrollView>
+
+        <ScreenFooter>
+          <Button testID="login-submit-button" label="Entrar" onPress={onSubmit} loading={loading} variant="primary" />
+          <Button
+            testID="login-forgot-password"
+            label="Esqueci minha senha"
+            onPress={() => router.push("/(auth)/forgot-password")}
+            variant="ghost"
+          />
+          <Button
+            testID="login-go-register"
+            label="Não tem conta? Criar conta"
+            onPress={() => router.push("/(auth)/register")}
+            variant="ghost"
+          />
+        </ScreenFooter>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -130,11 +108,5 @@ const styles = StyleSheet.create({
   brand: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
   title: { fontSize: fontSizes.h1, fontWeight: "800", letterSpacing: -0.8 },
   subtitle: { fontSize: fontSizes.body, marginTop: 8 },
-  label: { fontSize: fontSizes.small, fontWeight: "600", marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 16, fontSize: fontSizes.body },
   error: { marginTop: spacing.base, fontSize: fontSizes.small },
-  primaryBtn: { marginTop: spacing.xl, paddingVertical: 18, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
-  primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
-  forgotBtn: { alignItems: "center", paddingVertical: spacing.base },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: spacing.xl },
 });

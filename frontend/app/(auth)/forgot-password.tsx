@@ -1,21 +1,12 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { Link, useRouter } from "expo-router";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { AuthService, friendlyAuthError } from "../../src/services/AuthService";
-import { spacing, radii, fontSizes } from "../../src/utils/theme";
+import { spacing, fontSizes } from "../../src/utils/theme";
 import { isEmail, isStrongEnoughPassword } from "../../src/utils/validation";
+import { TextField, Button, ScreenFooter } from "../../src/components/ui";
 
 type Step = "email" | "code";
 
@@ -94,9 +85,9 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brandWrap}>
             <View style={[styles.dot, { backgroundColor: colors.primary }]} />
             <Text style={[styles.brand, { color: colors.textPrimary }]}>Saldo</Text>
@@ -109,12 +100,10 @@ export default function ForgotPasswordScreen() {
 
           <View style={{ height: spacing.xxl }} />
 
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Email cadastrado</Text>
-          <TextInput
+          <TextField
             testID="forgot-email-input"
-            style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+            label="Email cadastrado"
             placeholder="voce@email.com"
-            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
@@ -126,37 +115,32 @@ export default function ForgotPasswordScreen() {
           {step === "code" ? (
             <>
               <View style={{ height: spacing.base }} />
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Código ou link recebido</Text>
-              <TextInput
+              <TextField
                 testID="forgot-code-input"
-                style={[styles.input, styles.multilineInput, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+                label="Código ou link recebido"
                 placeholder="Cole aqui o código ou link do email"
-                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 multiline
+                style={styles.multilineInput}
                 value={code}
                 onChangeText={setCode}
               />
 
               <View style={{ height: spacing.base }} />
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Nova senha</Text>
-              <TextInput
+              <TextField
                 testID="forgot-password-input"
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+                label="Nova senha"
                 placeholder="Mínimo 6 caracteres"
-                placeholderTextColor={colors.textMuted}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />
 
               <View style={{ height: spacing.base }} />
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Confirmar nova senha</Text>
-              <TextInput
+              <TextField
                 testID="forgot-confirm-password-input"
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.textPrimary, borderColor: colors.border }]}
+                label="Confirmar nova senha"
                 placeholder="Digite novamente"
-                placeholderTextColor={colors.textMuted}
                 secureTextEntry
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -166,31 +150,26 @@ export default function ForgotPasswordScreen() {
 
           {message ? <Text testID="forgot-message" style={[styles.message, { color: colors.success }]}>{message}</Text> : null}
           {error ? <Text testID="forgot-error" style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
-
-          <TouchableOpacity
-            testID={step === "email" ? "forgot-send-code-button" : "forgot-reset-button"}
-            activeOpacity={0.85}
-            disabled={loading}
-            onPress={step === "email" ? onSendCode : onResetPassword}
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{step === "email" ? "Enviar código" : "Criar nova senha"}</Text>}
-          </TouchableOpacity>
-
-          {step === "code" ? (
-            <TouchableOpacity testID="forgot-resend-button" disabled={loading} onPress={onSendCode} style={styles.secondaryBtn}>
-              <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Reenviar email</Text>
-            </TouchableOpacity>
-          ) : null}
-
-          <View style={styles.footer}>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity testID="forgot-go-login">
-                <Text style={{ color: colors.primary, fontWeight: "700", fontSize: fontSizes.body }}>Voltar para entrar</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
         </ScrollView>
+
+        <ScreenFooter>
+          <Button
+            testID={step === "email" ? "forgot-send-code-button" : "forgot-reset-button"}
+            label={step === "email" ? "Enviar código" : "Criar nova senha"}
+            onPress={step === "email" ? onSendCode : onResetPassword}
+            loading={loading}
+            variant="primary"
+          />
+          {step === "code" ? (
+            <Button testID="forgot-resend-button" label="Reenviar email" onPress={onSendCode} variant="ghost" disabled={loading} />
+          ) : null}
+          <Button
+            testID="forgot-go-login"
+            label="Voltar para entrar"
+            onPress={() => router.push("/(auth)/login")}
+            variant="ghost"
+          />
+        </ScreenFooter>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -204,13 +183,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
   title: { fontSize: fontSizes.h1, fontWeight: "800", letterSpacing: -0.8 },
   subtitle: { fontSize: fontSizes.body, marginTop: 8 },
-  label: { fontSize: fontSizes.small, fontWeight: "600", marginBottom: 8 },
-  input: { borderWidth: 1, borderRadius: radii.lg, paddingHorizontal: spacing.base, paddingVertical: 16, fontSize: fontSizes.body },
   multilineInput: { minHeight: 86, textAlignVertical: "top" },
   message: { marginTop: spacing.base, fontSize: fontSizes.small, lineHeight: 20 },
   error: { marginTop: spacing.base, fontSize: fontSizes.small },
-  primaryBtn: { marginTop: spacing.xl, paddingVertical: 18, borderRadius: radii.lg, alignItems: "center", justifyContent: "center" },
-  primaryBtnText: { color: "#fff", fontSize: fontSizes.body, fontWeight: "700" },
-  secondaryBtn: { alignItems: "center", paddingVertical: spacing.base },
-  footer: { flexDirection: "row", justifyContent: "center", marginTop: spacing.xl },
 });
