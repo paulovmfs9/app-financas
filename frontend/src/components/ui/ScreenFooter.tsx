@@ -18,8 +18,8 @@ export function ScreenFooter({ children }: ScreenFooterProps) {
       style={[
         styles.footer,
         {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          backgroundColor: colors.primary,
+          borderTopColor: colors.primary,
           paddingBottom: spacing.base + insets.bottom,
         },
       ]}
@@ -31,7 +31,7 @@ export function ScreenFooter({ children }: ScreenFooterProps) {
 
 const styles = StyleSheet.create({
   footer: {
-    borderTopWidth: 1,
+    borderTopWidth: 0,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.base,
     gap: spacing.sm,

@@ -13,20 +13,36 @@ export interface ButtonProps {
   loading?: boolean;
   testID?: string;
   style?: StyleProp<ViewStyle>;
+  isDarkBackground?: boolean;
 }
 
-export function Button({ label, onPress, variant = "primary", disabled, loading, testID, style }: ButtonProps) {
+export function Button({ label, onPress, variant = "primary", disabled, loading, testID, style, isDarkBackground }: ButtonProps) {
   const { colors } = useTheme();
   const isDisabled = Boolean(disabled || loading);
 
-  const variantStyle: ViewStyle =
-    variant === "primary"
-      ? { backgroundColor: colors.primary }
+  const variantStyle: ViewStyle = isDarkBackground
+    ? variant === "primary"
+      ? { backgroundColor: "#FFFFFF" }
       : variant === "secondary"
-      ? { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.primary }
-      : { backgroundColor: "transparent" };
+      ? { backgroundColor: "transparent", borderWidth: 1.5, borderColor: "#FFFFFF" }
+      : { backgroundColor: "transparent" }
+    : variant === "primary"
+    ? { backgroundColor: colors.primary }
+    : variant === "secondary"
+    ? { backgroundColor: "transparent", borderWidth: 1.5, borderColor: colors.primary }
+    : { backgroundColor: "transparent" };
 
-  const textColor = variant === "primary" ? colors.onPrimary : variant === "secondary" ? colors.primary : colors.textSecondary;
+  const textColor = isDarkBackground
+    ? variant === "primary"
+      ? colors.primary
+      : variant === "secondary"
+      ? "#FFFFFF"
+      : colors.textSecondary
+    : variant === "primary"
+    ? colors.onPrimary
+    : variant === "secondary"
+    ? colors.primary
+    : colors.textSecondary;
 
   return (
     <TouchableOpacity
@@ -46,7 +62,7 @@ export function Button({ label, onPress, variant = "primary", disabled, loading,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.primary} />
+        <ActivityIndicator color={isDarkBackground ? (variant === "primary" ? colors.primary : "#FFFFFF") : (variant === "primary" ? colors.onPrimary : colors.primary)} />
       ) : (
         <Text style={[styles.text, { color: textColor }]}>{label}</Text>
       )}
